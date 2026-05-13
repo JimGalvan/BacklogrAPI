@@ -1,8 +1,11 @@
 package com.backlogr.controller.ticket;
 
+import com.backlogr.controller.BaseController;
 import com.backlogr.core.ticket.TicketCore;
 import com.backlogr.dto.ticket.TicketImportRequest;
 import com.backlogr.dto.ticket.TicketImportResponse;
+import com.backlogr.shared.HttpStatus;
+import com.backlogr.shared.Result;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
@@ -22,7 +25,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 @Tag(name = "Tickets", description = "Ticket management operations")
-public class TicketController {
+public class TicketController extends BaseController {
 
     @Inject
     TicketCore ticketCore;
@@ -35,16 +38,16 @@ public class TicketController {
     )
     @APIResponses({
         @APIResponse(
-            responseCode = "200",
+            responseCode = HttpStatus.OK,
             description = "Import completed — check imported/skipped/failed counts",
             content = @Content(schema = @Schema(implementation = TicketImportResponse.class))
         ),
-        @APIResponse(responseCode = "400", description = "Malformed request body"),
-        @APIResponse(responseCode = "422", description = "Bean Validation failure"),
-        @APIResponse(responseCode = "500", description = "Unexpected server error")
+        @APIResponse(responseCode = HttpStatus.BAD_REQUEST,           description = HttpStatus.Description.BAD_REQUEST),
+        @APIResponse(responseCode = HttpStatus.UNPROCESSABLE_ENTITY,  description = HttpStatus.Description.UNPROCESSABLE_ENTITY),
+        @APIResponse(responseCode = HttpStatus.INTERNAL_SERVER_ERROR, description = HttpStatus.Description.INTERNAL_SERVER_ERROR)
     })
     public Response importTickets(@Valid TicketImportRequest request) {
-        TicketImportResponse response = ticketCore.importTickets(request);
-        return Response.ok(response).build();
+        Result<TicketImportResponse> result = ticketCore.importTickets(request);
+        return toResponse(result);
     }
 }

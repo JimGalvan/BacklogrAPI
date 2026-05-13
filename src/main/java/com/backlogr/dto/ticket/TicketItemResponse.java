@@ -5,9 +5,10 @@ import com.backlogr.enums.ticket.TicketSource;
 import com.backlogr.enums.ticket.TicketStatus;
 
 import java.time.Instant;
+import java.util.UUID;
 
 public record TicketItemResponse(
-    Long id,
+    UUID id,
     String externalId,
     String title,
     TicketStatus status,

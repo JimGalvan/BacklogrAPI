@@ -5,6 +5,7 @@ import com.backlogr.repository.ticket.TicketRepository;
 import com.backlogr.dto.ticket.TicketImportRequest;
 import com.backlogr.dto.ticket.TicketImportResponse;
 import com.backlogr.dto.ticket.TicketItemResponse;
+import com.backlogr.shared.Result;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -19,7 +20,7 @@ public class TicketCore {
     TicketRepository ticketRepository;
 
     @Transactional
-    public TicketImportResponse importTickets(TicketImportRequest request) {
+    public Result<TicketImportResponse> importTickets(TicketImportRequest request) {
         List<TicketItemResponse> imported = new ArrayList<>();
         int skipped = 0;
 
@@ -45,7 +46,7 @@ public class TicketCore {
             imported.add(toResponse(ticket));
         }
 
-        return new TicketImportResponse(imported.size(), skipped, 0, imported);
+        return Result.ok(new TicketImportResponse(imported.size(), skipped, 0, imported));
     }
 
     private TicketItemResponse toResponse(Ticket ticket) {
