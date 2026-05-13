@@ -14,8 +14,12 @@ dependencies {
     implementation 'io.quarkus:quarkus-smallrye-openapi'
     implementation 'io.quarkus:quarkus-rest-jackson'
     implementation 'io.quarkus:quarkus-hibernate-orm-panache'
+    implementation 'io.quarkus:quarkus-hibernate-validator'
     implementation 'io.quarkus:quarkus-smallrye-jwt'
     implementation 'io.quarkus:quarkus-jdbc-postgresql'
+    // SQLite for local dev/test
+    implementation 'org.xerial:sqlite-jdbc:3.47.1.0'
+    implementation 'org.hibernate.orm:hibernate-community-dialects'
     implementation 'io.quarkus:quarkus-arc'
     implementation 'io.quarkus:quarkus-hibernate-orm'
     testImplementation 'io.quarkus:quarkus-junit'
