@@ -31,6 +31,9 @@ public class Ticket extends BaseEntity {
     @Column(name = "external_id", nullable = false)
     public String externalId;
 
+    @Column(nullable = false)
+    public String url;
+
     @Column(nullable = false, length = 255)
     public String title;
 

@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(./gradlew quarkusDev)",
-      "Bash(java *)"
+      "Bash(java *)",
+      "WebSearch",
+      "WebFetch(domain:developer.atlassian.com)"
     ]
   }
 }

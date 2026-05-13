@@ -3,7 +3,7 @@ package com.backlogr.controller.ticket;
 import com.backlogr.controller.BaseController;
 import com.backlogr.core.ticket.TicketCore;
 import com.backlogr.dto.ticket.TicketImportRequest;
-import com.backlogr.dto.ticket.TicketImportResponse;
+import com.backlogr.dto.ticket.TicketResponse;
 import com.backlogr.shared.HttpStatus;
 import com.backlogr.shared.Result;
 import jakarta.inject.Inject;
@@ -33,21 +33,22 @@ public class TicketController extends BaseController {
     @POST
     @Path("/import")
     @Operation(
-        summary = "Import tickets in bulk",
-        description = "Imports a batch of tickets from an external source. Duplicates (same externalId + source) are silently skipped."
+        summary = "Import a ticket from an external tracker URL",
+        description = "Parses the tracker URL, determines the source, and imports the ticket. Supported: Jira, GitHub, Linear, Trello."
     )
     @APIResponses({
         @APIResponse(
             responseCode = HttpStatus.OK,
-            description = "Import completed — check imported/skipped/failed counts",
-            content = @Content(schema = @Schema(implementation = TicketImportResponse.class))
+            description = HttpStatus.Description.OK,
+            content = @Content(schema = @Schema(implementation = TicketResponse.class))
         ),
         @APIResponse(responseCode = HttpStatus.BAD_REQUEST,           description = HttpStatus.Description.BAD_REQUEST),
+        @APIResponse(responseCode = HttpStatus.CONFLICT,              description = HttpStatus.Description.CONFLICT),
         @APIResponse(responseCode = HttpStatus.UNPROCESSABLE_ENTITY,  description = HttpStatus.Description.UNPROCESSABLE_ENTITY),
         @APIResponse(responseCode = HttpStatus.INTERNAL_SERVER_ERROR, description = HttpStatus.Description.INTERNAL_SERVER_ERROR)
     })
-    public Response importTickets(@Valid TicketImportRequest request) {
-        Result<TicketImportResponse> result = ticketCore.importTickets(request);
+    public Response importTicket(@Valid TicketImportRequest request) {
+        Result<TicketResponse> result = ticketCore.importTicket(request);
         return toResponse(result);
     }
 }

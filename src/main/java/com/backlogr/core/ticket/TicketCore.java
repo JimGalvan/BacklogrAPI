@@ -1,17 +1,17 @@
 package com.backlogr.core.ticket;
 
+import com.backlogr.core.ticket.TicketUrlParser.ParsedTicketUrl;
 import com.backlogr.domain.ticket.Ticket;
-import com.backlogr.repository.ticket.TicketRepository;
 import com.backlogr.dto.ticket.TicketImportRequest;
-import com.backlogr.dto.ticket.TicketImportResponse;
-import com.backlogr.dto.ticket.TicketItemResponse;
+import com.backlogr.dto.ticket.TicketResponse;
+import com.backlogr.integration.ExternalTicketClient;
+import com.backlogr.integration.ExternalTicketData;
+import com.backlogr.repository.ticket.TicketRepository;
 import com.backlogr.shared.Result;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @ApplicationScoped
 public class TicketCore {
@@ -19,45 +19,71 @@ public class TicketCore {
     @Inject
     TicketRepository ticketRepository;
 
+    @Inject
+    Instance<ExternalTicketClient> clients;
+
     @Transactional
-    public Result<TicketImportResponse> importTickets(TicketImportRequest request) {
-        List<TicketItemResponse> imported = new ArrayList<>();
-        int skipped = 0;
+    public Result<TicketResponse> importTicket(TicketImportRequest request) {
+        ParsedTicketUrl parsed = TicketUrlParser.parse(request.url()).orElse(null);
 
-        for (var item : request.tickets()) {
-            if (ticketRepository.existsByExternalIdAndSource(item.externalId(), request.source())) {
-                skipped++;
-                continue;
-            }
-
-            Ticket ticket = new Ticket();
-            ticket.externalId = item.externalId();
-            ticket.title = item.title();
-            ticket.description = item.description();
-            ticket.status = item.status();
-            ticket.priority = item.priority();
-            ticket.source = request.source();
-            ticket.assignee = item.assignee();
-            ticket.storyPoints = item.storyPoints();
-            ticket.tags = item.tags() != null ? item.tags() : List.of();
-
-            ticketRepository.persist(ticket);
-
-            imported.add(toResponse(ticket));
+        if (parsed == null) {
+            return Result.badRequest("Unrecognised tracker URL. Supported: Jira, GitHub, Linear, Trello.");
         }
 
-        return Result.ok(new TicketImportResponse(imported.size(), skipped, 0, imported));
+        ExternalTicketClient client = clients.stream()
+                .filter(currentClient -> currentClient.supports(parsed.source()))
+                .findFirst()
+                .orElse(null);
+
+        if (client == null) {
+            return Result.badRequest("No integration available for " + parsed.source() + ". Currently supported: JIRA.");
+        }
+
+        if (ticketRepository.existsByExternalIdAndSource(parsed.key(), parsed.source())) {
+            return Result.conflict("Ticket " + parsed.key() + " has already been imported.");
+        }
+
+        Result<ExternalTicketData> fetchResult = client.fetch(parsed.key());
+        if (!fetchResult.isSuccess()) {
+            return Result.internalError(fetchResult.getMessage());
+        }
+
+        Ticket ticket = toEntity(fetchResult.getValue(), parsed, request.url());
+        ticketRepository.persist(ticket);
+
+        return Result.ok(toResponse(ticket));
     }
 
-    private TicketItemResponse toResponse(Ticket ticket) {
-        return new TicketItemResponse(
+    private Ticket toEntity(ExternalTicketData data, ParsedTicketUrl parsed, String url) {
+        Ticket ticket = new Ticket();
+        ticket.externalId   = parsed.key();
+        ticket.url          = url;
+        ticket.source       = parsed.source();
+        ticket.title        = data.title();
+        ticket.description  = data.description();
+        ticket.status       = data.status();
+        ticket.priority     = data.priority();
+        ticket.assignee     = data.assignee();
+        ticket.storyPoints  = data.storyPoints();
+        ticket.tags         = data.tags();
+        return ticket;
+    }
+
+    public static TicketResponse toResponse(Ticket ticket) {
+        return new TicketResponse(
             ticket.id,
             ticket.externalId,
+            ticket.url,
             ticket.title,
+            ticket.description,
             ticket.status,
             ticket.priority,
             ticket.source,
-            ticket.createdAt
+            ticket.assignee,
+            ticket.storyPoints,
+            ticket.tags,
+            ticket.createdAt,
+            ticket.lastModifiedAt
         );
     }
 }

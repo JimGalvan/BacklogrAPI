@@ -5,14 +5,21 @@ import com.backlogr.enums.ticket.TicketSource;
 import com.backlogr.enums.ticket.TicketStatus;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
-public record TicketItemResponse(
+public record TicketResponse(
     UUID id,
-    String externalId,
+    String key,
+    String url,
     String title,
+    String description,
     TicketStatus status,
     TicketPriority priority,
     TicketSource source,
-    Instant createdAt
+    String assignee,
+    Integer storyPoints,
+    List<String> tags,
+    Instant createdAt,
+    Instant lastModifiedAt
 ) {}
