@@ -4,8 +4,8 @@ import com.backlogr.core.ticket.TicketUrlParser.ParsedTicketUrl;
 import com.backlogr.domain.ticket.Ticket;
 import com.backlogr.dto.ticket.TicketImportRequest;
 import com.backlogr.dto.ticket.TicketResponse;
-import com.backlogr.integration.ExternalTicketClient;
-import com.backlogr.integration.ExternalTicketData;
+import com.backlogr.integration.TicketClient;
+import com.backlogr.integration.TicketData;
 import com.backlogr.repository.ticket.TicketRepository;
 import com.backlogr.shared.Result;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -20,45 +20,48 @@ public class TicketCore {
     TicketRepository ticketRepository;
 
     @Inject
-    Instance<ExternalTicketClient> clients;
+    Instance<TicketClient> clients;
 
     @Transactional
     public Result<TicketResponse> importTicket(TicketImportRequest request) {
-        ParsedTicketUrl parsed = TicketUrlParser.parse(request.url()).orElse(null);
+        ParsedTicketUrl parsedTicketUrl = TicketUrlParser.parse(request.url()).orElse(null);
 
-        if (parsed == null) {
+        if (parsedTicketUrl == null) {
             return Result.badRequest("Unrecognised tracker URL. Supported: Jira, GitHub, Linear, Trello.");
         }
 
-        ExternalTicketClient client = clients.stream()
-                .filter(currentClient -> currentClient.supports(parsed.source()))
-                .findFirst()
-                .orElse(null);
+        TicketClient client = null;
+        for (TicketClient ticketClient : clients) {
+            if (ticketClient.supports(parsedTicketUrl.source())) {
+                client = ticketClient;
+                break;
+            }
+        }
 
         if (client == null) {
-            return Result.badRequest("No integration available for " + parsed.source() + ". Currently supported: JIRA.");
+            return Result.badRequest("No integration available for " + parsedTicketUrl.source() + ". Currently supported: JIRA.");
         }
 
-        if (ticketRepository.existsByExternalIdAndSource(parsed.key(), parsed.source())) {
-            return Result.conflict("Ticket " + parsed.key() + " has already been imported.");
+        if (ticketRepository.existsByExternalIdAndSource(parsedTicketUrl.key(), parsedTicketUrl.source())) {
+            return Result.conflict("Ticket " + parsedTicketUrl.key() + " has already been imported.");
         }
 
-        Result<ExternalTicketData> fetchResult = client.fetch(parsed.key());
+        Result<TicketData> fetchResult = client.fetch(parsedTicketUrl.key());
         if (!fetchResult.isSuccess()) {
             return Result.internalError(fetchResult.getMessage());
         }
 
-        Ticket ticket = toEntity(fetchResult.getValue(), parsed, request.url());
+        Ticket ticket = toEntity(fetchResult.getValue(), parsedTicketUrl, request.url());
         ticketRepository.persist(ticket);
 
         return Result.ok(toResponse(ticket));
     }
 
-    private Ticket toEntity(ExternalTicketData data, ParsedTicketUrl parsed, String url) {
+    private Ticket toEntity(TicketData data, ParsedTicketUrl parsedTicketUrl, String url) {
         Ticket ticket = new Ticket();
-        ticket.externalId   = parsed.key();
+        ticket.externalId   = parsedTicketUrl.key();
         ticket.url          = url;
-        ticket.source       = parsed.source();
+        ticket.source       = parsedTicketUrl.source();
         ticket.title        = data.title();
         ticket.description  = data.description();
         ticket.status       = data.status();

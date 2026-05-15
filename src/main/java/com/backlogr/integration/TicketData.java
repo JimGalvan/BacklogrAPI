@@ -5,7 +5,7 @@ import com.backlogr.enums.ticket.TicketStatus;
 
 import java.util.List;
 
-public record ExternalTicketData(
+public record TicketData(
     String key,
     String title,
     String description,

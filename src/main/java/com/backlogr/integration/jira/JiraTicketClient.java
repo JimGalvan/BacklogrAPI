@@ -3,8 +3,8 @@ package com.backlogr.integration.jira;
 import com.backlogr.enums.ticket.TicketPriority;
 import com.backlogr.enums.ticket.TicketSource;
 import com.backlogr.enums.ticket.TicketStatus;
-import com.backlogr.integration.ExternalTicketClient;
-import com.backlogr.integration.ExternalTicketData;
+import com.backlogr.integration.TicketClient;
+import com.backlogr.integration.TicketData;
 import com.backlogr.integration.jira.client.JiraApiClient;
 import com.backlogr.integration.jira.dto.JiraIssueResponse;
 import com.backlogr.shared.Result;
@@ -15,7 +15,7 @@ import org.eclipse.microprofile.rest.client.inject.RestClient;
 import java.util.List;
 
 @ApplicationScoped
-public class JiraTicketClient implements ExternalTicketClient {
+public class JiraTicketClient implements TicketClient {
 
     @Inject
     @RestClient
@@ -27,7 +27,7 @@ public class JiraTicketClient implements ExternalTicketClient {
     }
 
     @Override
-    public Result<ExternalTicketData> fetch(String key) {
+    public Result<TicketData> fetch(String key) {
         try {
             JiraIssueResponse issue = jiraApiClient.getIssue(key);
             return Result.ok(toExternalData(issue));
@@ -36,10 +36,10 @@ public class JiraTicketClient implements ExternalTicketClient {
         }
     }
 
-    private ExternalTicketData toExternalData(JiraIssueResponse issue) {
+    private TicketData toExternalData(JiraIssueResponse issue) {
         JiraIssueResponse.JiraFields fields = issue.fields();
 
-        return new ExternalTicketData(
+        return new TicketData(
             issue.key(),
             fields.summary(),
             null,                           // Jira description uses Atlassian Document Format — out of scope for POC
