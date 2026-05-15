@@ -5,6 +5,7 @@ import com.backlogr.core.auth.ExternalAuthCore;
 import com.backlogr.shared.HttpStatus;
 import com.backlogr.shared.Result;
 import io.quarkus.security.Authenticated;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -30,6 +31,7 @@ import java.util.UUID;
 @Produces(MediaType.APPLICATION_JSON)
 @Tag(name = "External Auth", description = "OAuth callbacks for external integrations")
 @SecurityScheme(securitySchemeName = "jwt", type = SecuritySchemeType.HTTP, scheme = "bearer", bearerFormat = "JWT")
+@RunOnVirtualThread
 public class ExternalAuthController extends BaseController {
 
     @Inject
