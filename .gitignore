@@ -42,3 +42,7 @@ src/main/resources/privateKey.pem
 /.quarkus/cli/plugins/
 # TLS Certificates
 .certs/
+/backlogr-dev.db
+/src/main/resources/publicKey.pem
+/.claude/
+/docs/
