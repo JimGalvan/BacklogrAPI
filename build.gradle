@@ -23,6 +23,7 @@ dependencies {
     implementation 'org.xerial:sqlite-jdbc:3.47.1.0'
     implementation 'org.hibernate.orm:hibernate-community-dialects'
     implementation 'io.quarkus:quarkus-smallrye-health'
+    implementation 'io.quarkus:quarkus-flyway'
     implementation 'io.quarkus:quarkus-arc'
     implementation 'io.quarkus:quarkus-hibernate-orm'
     testImplementation 'io.quarkus:quarkus-junit'
