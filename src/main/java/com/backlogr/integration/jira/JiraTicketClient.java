@@ -1,5 +1,6 @@
 package com.backlogr.integration.jira;
 
+import com.backlogr.domain.user.UserIntegration;
 import com.backlogr.enums.ticket.TicketPriority;
 import com.backlogr.enums.ticket.TicketSource;
 import com.backlogr.enums.ticket.TicketStatus;
@@ -27,9 +28,13 @@ public class JiraTicketClient implements TicketClient {
     }
 
     @Override
-    public Result<TicketData> fetch(String key) {
+    public Result<TicketData> fetch(String key, UserIntegration integration) {
         try {
-            JiraIssueResponse issue = jiraApiClient.getIssue(key);
+            JiraIssueResponse issue = jiraApiClient.getIssue(
+                integration.workspaceId,
+                key,
+                "Bearer " + integration.accessToken
+            );
             return Result.ok(toExternalData(issue));
         } catch (Exception e) {
             return Result.internalError("Failed to fetch Jira issue " + key + ": " + e.getMessage());
@@ -42,7 +47,7 @@ public class JiraTicketClient implements TicketClient {
         return new TicketData(
             issue.key(),
             fields.summary(),
-            null,                           // Jira description uses Atlassian Document Format — out of scope for POC
+            null,
             mapStatus(fields.status()),
             mapPriority(fields.priority()),
             fields.assignee() != null ? fields.assignee().emailAddress() : null,
@@ -54,11 +59,11 @@ public class JiraTicketClient implements TicketClient {
     private TicketStatus mapStatus(JiraIssueResponse.JiraStatus jiraStatus) {
         if (jiraStatus == null) return TicketStatus.BACKLOG;
         return switch (jiraStatus.name().toLowerCase()) {
-            case "to do"      -> TicketStatus.TODO;
+            case "to do"       -> TicketStatus.TODO;
             case "in progress" -> TicketStatus.IN_PROGRESS;
-            case "in review"  -> TicketStatus.IN_REVIEW;
-            case "done"       -> TicketStatus.DONE;
-            default           -> TicketStatus.BACKLOG;
+            case "in review"   -> TicketStatus.IN_REVIEW;
+            case "done"        -> TicketStatus.DONE;
+            default            -> TicketStatus.BACKLOG;
         };
     }
 
