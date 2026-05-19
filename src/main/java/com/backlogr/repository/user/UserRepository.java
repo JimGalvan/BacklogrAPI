@@ -21,4 +21,8 @@ public class UserRepository implements PanacheRepository<User> {
     public User findById(UUID userId) {
         return find("id", userId).firstResult();
     }
+
+    public Optional<User> findByRefreshToken(String refreshToken) {
+        return find("refreshToken", refreshToken).firstResultOptional();
+    }
 }

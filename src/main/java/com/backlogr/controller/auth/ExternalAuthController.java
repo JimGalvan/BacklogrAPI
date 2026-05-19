@@ -46,10 +46,10 @@ public class ExternalAuthController extends BaseController {
     @SecurityRequirement(name = "jwt")
     @Operation(
         summary = "Initiate OAuth flow for an external provider",
-        description = "Generates a CSRF state token, stores it server-side, and redirects to the provider's authorization page. Supported providers: jira."
+        description = "Generates a CSRF state token, stores it server-side, and returns the provider authorization URL. The client should redirect the user to that URL. Supported providers: jira."
     )
     @APIResponses({
-        @APIResponse(responseCode = "302",                   description = "Redirect to provider authorization page"),
+        @APIResponse(responseCode = HttpStatus.OK,           description = "Authorization URL to redirect the user to"),
         @APIResponse(responseCode = HttpStatus.UNAUTHORIZED, description = HttpStatus.Description.UNAUTHORIZED),
         @APIResponse(responseCode = HttpStatus.NOT_FOUND,    description = HttpStatus.Description.NOT_FOUND)
     })
@@ -60,8 +60,10 @@ public class ExternalAuthController extends BaseController {
         UUID userId = UUID.fromString(jwt.getSubject());
         Result<URI> result = externalAuthCore.buildAuthorizationUrl(userId, provider);
         if (!result.isSuccess()) return toResponse(result);
-        return Response.seeOther(result.getValue()).build();
+        return Response.ok(new AuthorizationUrlResponse(result.getValue().toString())).build();
     }
+
+    record AuthorizationUrlResponse(String url) {}
 
     @GET
     @Path("/{provider}/callback")

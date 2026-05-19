@@ -4,8 +4,11 @@ import com.backlogr.controller.BaseController;
 import com.backlogr.core.auth.AuthCore;
 import com.backlogr.dto.auth.LoginRequest;
 import com.backlogr.dto.auth.LoginResponse;
+import com.backlogr.dto.auth.RefreshRequest;
 import com.backlogr.shared.HttpStatus;
 import com.backlogr.shared.Result;
+import io.quarkus.security.Authenticated;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
@@ -14,13 +17,16 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.media.Content;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
-import io.smallrye.common.annotation.RunOnVirtualThread;
+import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
+
+import java.util.UUID;
 
 @Path("/api/v1/auth")
 @Consumes(MediaType.APPLICATION_JSON)
@@ -32,11 +38,14 @@ public class AuthController extends BaseController {
     @Inject
     AuthCore authCore;
 
+    @Inject
+    JsonWebToken jwt;
+
     @POST
     @Path("/login")
     @Operation(
         summary = "Login",
-        description = "Authenticates a user by email and password and returns a signed JWT."
+        description = "Authenticates a user by email and password. Returns a short-lived JWT and a long-lived refresh token."
     )
     @APIResponses({
         @APIResponse(
@@ -50,5 +59,44 @@ public class AuthController extends BaseController {
     public Response login(@Valid LoginRequest request) {
         Result<LoginResponse> result = authCore.login(request);
         return toResponse(result);
+    }
+
+    @POST
+    @Path("/refresh")
+    @Operation(
+        summary = "Refresh JWT",
+        description = "Exchanges a valid refresh token for a new JWT and rotated refresh token."
+    )
+    @APIResponses({
+        @APIResponse(
+            responseCode = HttpStatus.OK,
+            description = HttpStatus.Description.OK,
+            content = @Content(schema = @Schema(implementation = LoginResponse.class))
+        ),
+        @APIResponse(responseCode = HttpStatus.UNAUTHORIZED,         description = HttpStatus.Description.UNAUTHORIZED),
+        @APIResponse(responseCode = HttpStatus.UNPROCESSABLE_ENTITY, description = HttpStatus.Description.UNPROCESSABLE_ENTITY)
+    })
+    public Response refresh(@Valid RefreshRequest request) {
+        Result<LoginResponse> result = authCore.refresh(request);
+        return toResponse(result);
+    }
+
+    @POST
+    @Path("/logout")
+    @Authenticated
+    @SecurityRequirement(name = "jwt")
+    @Operation(
+        summary = "Logout",
+        description = "Invalidates the current user's refresh token."
+    )
+    @APIResponses({
+        @APIResponse(responseCode = HttpStatus.NO_CONTENT, description = HttpStatus.Description.NO_CONTENT),
+        @APIResponse(responseCode = HttpStatus.UNAUTHORIZED, description = HttpStatus.Description.UNAUTHORIZED)
+    })
+    public Response logout() {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        Result<Void> result = authCore.logout(userId);
+        if (!result.isSuccess()) return toResponse(result);
+        return Response.noContent().build();
     }
 }

@@ -5,6 +5,8 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 
+import java.time.Instant;
+
 @Entity
 @Table(name = "users")
 public class User extends BaseEntity {
@@ -14,4 +16,10 @@ public class User extends BaseEntity {
 
     @Column(name = "password_hash", nullable = false)
     public String passwordHash;
+
+    @Column(name = "refresh_token", columnDefinition = "TEXT")
+    public String refreshToken;
+
+    @Column(name = "refresh_token_expiry")
+    public Instant refreshTokenExpiry;
 }

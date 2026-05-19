@@ -10,6 +10,8 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.mindrot.jbcrypt.BCrypt;
 
+import java.util.UUID;
+
 @ApplicationScoped
 public class UserCore {
 
@@ -28,6 +30,14 @@ public class UserCore {
         userRepository.persist(user);
 
         return Result.created(toResponse(user));
+    }
+
+    public Result<UserResponse> getMe(UUID userId) {
+        User user = userRepository.findById(userId);
+        if (user == null) {
+            return Result.notFound("User not found.");
+        }
+        return Result.ok(toResponse(user));
     }
 
     private static UserResponse toResponse(User user) {
