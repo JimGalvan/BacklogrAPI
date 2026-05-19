@@ -1,5 +1,14 @@
-*
-!build/*-runner
-!build/*-runner.jar
-!build/lib/*
-!build/quarkus-app/*
+# Allow Gradle build files
+!gradlew
+!gradlew.bat
+!gradle/
+!gradle/**
+!build.gradle
+!build.gradle.kts
+!settings.gradle
+!settings.gradle.kts
+!gradle.properties
+
+# Allow source code
+!src/
+!src/**
