@@ -5,6 +5,7 @@ import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @ApplicationScoped
 public class UserRepository implements PanacheRepository<User> {
@@ -15,5 +16,9 @@ public class UserRepository implements PanacheRepository<User> {
 
     public boolean existsByEmail(String email) {
         return count("email", email) > 0;
+    }
+
+    public User findById(UUID userId) {
+        return find("id", userId).firstResult();
     }
 }

@@ -4,7 +4,11 @@
       "Bash(./gradlew quarkusDev)",
       "Bash(java *)",
       "WebSearch",
-      "WebFetch(domain:developer.atlassian.com)"
+      "WebFetch(domain:developer.atlassian.com)",
+      "Bash(openssl genpkey *)",
+      "Bash(openssl rsa *)",
+      "Bash(Remove-Item *)",
+      "Bash(curl *)"
     ]
   }
 }
