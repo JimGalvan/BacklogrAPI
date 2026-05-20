@@ -9,6 +9,7 @@ import com.backlogr.enums.integration.IntegrationProvider;
 import com.backlogr.enums.ticket.TicketSource;
 import com.backlogr.integration.TicketClient;
 import com.backlogr.integration.TicketData;
+import com.backlogr.mapper.TicketMapper;
 import com.backlogr.repository.ticket.TicketRepository;
 import com.backlogr.repository.user.UserIntegrationRepository;
 import com.backlogr.shared.Result;
@@ -30,6 +31,9 @@ public class TicketCore {
 
     @Inject
     Instance<TicketClient> clients;
+
+    @Inject
+    TicketMapper ticketMapper;
 
     @Transactional
     public Result<TicketResponse> importTicket(UUID userId, TicketImportRequest request) {
@@ -65,10 +69,10 @@ public class TicketCore {
             return Result.internalError(fetchResult.getMessage());
         }
 
-        Ticket ticket = toEntity(fetchResult.getValue(), parsedTicketUrl, request.url());
+        Ticket ticket = ticketMapper.toEntity(fetchResult.getValue(), parsedTicketUrl, request.url());
         ticketRepository.persist(ticket);
 
-        return Result.ok(toResponse(ticket));
+        return Result.ok(ticketMapper.toResponse(ticket));
     }
 
     private UserIntegration resolveIntegration(UUID userId, TicketSource source) {
@@ -78,38 +82,5 @@ public class TicketCore {
         };
         if (provider == null) return null;
         return userIntegrationRepository.findByUserIdAndProvider(userId, provider).orElse(null);
-    }
-
-    private Ticket toEntity(TicketData data, ParsedTicketUrl parsedTicketUrl, String url) {
-        Ticket ticket = new Ticket();
-        ticket.externalId  = parsedTicketUrl.key();
-        ticket.url         = url;
-        ticket.source      = parsedTicketUrl.source();
-        ticket.title       = data.title();
-        ticket.description = data.description();
-        ticket.status      = data.status();
-        ticket.priority    = data.priority();
-        ticket.assignee    = data.assignee();
-        ticket.storyPoints = data.storyPoints();
-        ticket.tags        = data.tags();
-        return ticket;
-    }
-
-    public static TicketResponse toResponse(Ticket ticket) {
-        return new TicketResponse(
-            ticket.id,
-            ticket.externalId,
-            ticket.url,
-            ticket.title,
-            ticket.description,
-            ticket.status,
-            ticket.priority,
-            ticket.source,
-            ticket.assignee,
-            ticket.storyPoints,
-            ticket.tags,
-            ticket.createdAt,
-            ticket.lastModifiedAt
-        );
     }
 }

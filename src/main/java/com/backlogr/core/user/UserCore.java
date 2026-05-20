@@ -3,6 +3,7 @@ package com.backlogr.core.user;
 import com.backlogr.domain.user.User;
 import com.backlogr.dto.user.CreateUserRequest;
 import com.backlogr.dto.user.UserResponse;
+import com.backlogr.mapper.UserMapper;
 import com.backlogr.repository.user.UserRepository;
 import com.backlogr.shared.Result;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -18,6 +19,9 @@ public class UserCore {
     @Inject
     UserRepository userRepository;
 
+    @Inject
+    UserMapper userMapper;
+
     @Transactional
     public Result<UserResponse> createUser(CreateUserRequest request) {
         if (userRepository.existsByEmail(request.email())) {
@@ -29,7 +33,7 @@ public class UserCore {
         user.passwordHash = BCrypt.hashpw(request.password(), BCrypt.gensalt());
         userRepository.persist(user);
 
-        return Result.created(toResponse(user));
+        return Result.created(userMapper.toResponse(user));
     }
 
     public Result<UserResponse> getMe(UUID userId) {
@@ -37,10 +41,6 @@ public class UserCore {
         if (user == null) {
             return Result.notFound("User not found.");
         }
-        return Result.ok(toResponse(user));
-    }
-
-    private static UserResponse toResponse(User user) {
-        return new UserResponse(user.id, user.email, user.createdAt, user.lastModifiedAt);
+        return Result.ok(userMapper.toResponse(user));
     }
 }
