@@ -31,7 +31,7 @@ public class JiraTicketClient implements TicketClient {
     public Result<TicketData> fetch(String key, UserIntegration integration) {
         try {
             JiraIssueResponse issue = jiraApiClient.getIssue(
-                integration.workspaceId,
+                integration.cloudId,
                 key,
                 "Bearer " + integration.accessToken
             );

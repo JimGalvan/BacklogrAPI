@@ -2,8 +2,10 @@ package com.backlogr.controller.user;
 
 import com.backlogr.controller.BaseController;
 import com.backlogr.core.user.UserCore;
+import com.backlogr.core.workspace.WorkspaceCore;
 import com.backlogr.dto.user.CreateUserRequest;
 import com.backlogr.dto.user.UserResponse;
+import com.backlogr.dto.workspace.WorkspaceResponse;
 import com.backlogr.shared.HttpStatus;
 import com.backlogr.shared.Result;
 import io.quarkus.security.Authenticated;
@@ -14,6 +16,7 @@ import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -26,6 +29,7 @@ import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
+import java.util.List;
 import java.util.UUID;
 
 @Path("/api/v1/users")
@@ -37,6 +41,9 @@ public class UserController extends BaseController {
 
     @Inject
     UserCore userCore;
+
+    @Inject
+    WorkspaceCore workspaceCore;
 
     @Inject
     JsonWebToken jwt;
@@ -65,10 +72,7 @@ public class UserController extends BaseController {
     @Path("/me")
     @Authenticated
     @SecurityRequirement(name = "jwt")
-    @Operation(
-        summary = "Get current user",
-        description = "Returns the authenticated user's profile."
-    )
+    @Operation(summary = "Get current user", description = "Returns the authenticated user's profile.")
     @APIResponses({
         @APIResponse(
             responseCode = HttpStatus.OK,
@@ -81,6 +85,25 @@ public class UserController extends BaseController {
     public Response getMe() {
         UUID userId = UUID.fromString(jwt.getSubject());
         Result<UserResponse> result = userCore.getMe(userId);
+        return toResponse(result);
+    }
+
+    @GET
+    @Path("/{userId}/workspaces")
+    @Authenticated
+    @SecurityRequirement(name = "jwt")
+    @Operation(summary = "Get all workspaces a user belongs to")
+    @APIResponses({
+        @APIResponse(
+            responseCode = HttpStatus.OK,
+            description = HttpStatus.Description.OK,
+            content = @Content(schema = @Schema(implementation = WorkspaceResponse.class))
+        ),
+        @APIResponse(responseCode = HttpStatus.NOT_FOUND,    description = HttpStatus.Description.NOT_FOUND),
+        @APIResponse(responseCode = HttpStatus.UNAUTHORIZED, description = HttpStatus.Description.UNAUTHORIZED)
+    })
+    public Response getUserWorkspaces(@PathParam("userId") UUID userId) {
+        Result<List<WorkspaceResponse>> result = workspaceCore.getUserWorkspaces(userId);
         return toResponse(result);
     }
 }

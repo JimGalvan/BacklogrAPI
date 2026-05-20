@@ -38,8 +38,8 @@ public class UserIntegration extends BaseEntity {
     @Column(name = "refresh_token", columnDefinition = "TEXT")
     public String refreshToken;
 
-    @Column(name = "workspace_id")
-    public String workspaceId;
+    @Column(name = "cloud_id")
+    public String cloudId;
 
     @Column(name = "external_account_id")
     public String externalAccountId;

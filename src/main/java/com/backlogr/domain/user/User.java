@@ -17,6 +17,9 @@ public class User extends BaseEntity {
     @Column(name = "password_hash", nullable = false)
     public String passwordHash;
 
+    @Column
+    public String name;
+
     @Column(name = "refresh_token", columnDefinition = "TEXT")
     public String refreshToken;
 

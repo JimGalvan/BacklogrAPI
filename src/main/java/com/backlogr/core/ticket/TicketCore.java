@@ -40,7 +40,7 @@ public class TicketCore {
         ParsedTicketUrl parsedTicketUrl = TicketUrlParser.parse(request.url()).orElse(null);
 
         if (parsedTicketUrl == null) {
-            return Result.badRequest("Unrecognised tracker URL. Supported: Jira, GitHub, Linear, Trello.");
+            return Result.badRequest("Unrecognised tracker URL. Supported: Jira.");
         }
 
         TicketClient client = null;

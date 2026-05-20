@@ -11,7 +11,8 @@
       "Bash(curl *)",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\jimmy\\\\IdeaProjects\\\\BacklogrAPI\\\\backlogr-API\\\\src\\\\main\\\\java\\\\com\\\\backlogr\" -Recurse -File -Filter \"*.java\")",
       "Bash(Select-Object -ExpandProperty FullName)",
-      "Bash(Sort-Object)"
+      "Bash(Sort-Object)",
+      "Bash(git log *)"
     ]
   }
 }

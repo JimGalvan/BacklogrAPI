@@ -31,6 +31,7 @@ public class UserCore {
         User user = new User();
         user.email = request.email();
         user.passwordHash = BCrypt.hashpw(request.password(), BCrypt.gensalt());
+        user.name = request.name();
         userRepository.persist(user);
 
         return Result.created(userMapper.toResponse(user));

@@ -1,12 +1,12 @@
-package com.backlogr.dto.user;
+package com.backlogr.dto.workspace;
 
 import java.time.Instant;
 import java.util.UUID;
 
-public record UserResponse(
+public record WorkspaceResponse(
     UUID id,
-    String email,
     String name,
+    UUID ownerId,
     Instant createdAt,
     Instant lastModifiedAt
 ) {}

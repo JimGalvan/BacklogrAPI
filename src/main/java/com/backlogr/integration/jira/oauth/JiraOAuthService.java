@@ -90,7 +90,7 @@ public class JiraOAuthService {
 
         integration.accessToken = tokens.accessToken();
         integration.refreshToken = tokens.refreshToken();
-        integration.workspaceId = resource.id();
+        integration.cloudId = resource.id();
         integration.tokenExpiry = Instant.now().plusSeconds(tokens.expiresIn());
 
         if (isNew) {
