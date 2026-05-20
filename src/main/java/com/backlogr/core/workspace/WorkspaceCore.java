@@ -79,16 +79,18 @@ public class WorkspaceCore {
         if (!authenticatedUserId.equals(workspace.ownerId)) {
             return Result.forbidden("Only the workspace owner can invite members.");
         }
-        if (userRepository.findById(request.userId()) == null) {
-            return Result.notFound("User not found.");
+
+        var invitee = userRepository.findByEmail(request.email()).orElse(null);
+        if (invitee == null) {
+            return Result.notFound("No account found for " + request.email() + ".");
         }
-        if (workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspaceId, request.userId())) {
+        if (workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspaceId, invitee.id)) {
             return Result.conflict("User is already a member of this workspace.");
         }
 
         WorkspaceMember member = new WorkspaceMember();
         member.workspaceId = workspaceId;
-        member.userId = request.userId();
+        member.userId = invitee.id;
         workspaceMemberRepository.persist(member);
 
         return Result.created(workspaceMapper.toMemberResponse(member));
