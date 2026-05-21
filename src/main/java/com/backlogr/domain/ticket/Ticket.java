@@ -1,64 +1,39 @@
 package com.backlogr.domain.ticket;
 
 import com.backlogr.domain.BaseEntity;
-import com.backlogr.enums.ticket.TicketPriority;
-import com.backlogr.enums.ticket.TicketSource;
-import com.backlogr.enums.ticket.TicketStatus;
-import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
-import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.time.Instant;
+import java.util.UUID;
 
 @Entity
 @Table(
     name = "tickets",
     uniqueConstraints = @UniqueConstraint(
-        name = "uq_ticket_external_id_source",
-        columnNames = {"external_id", "source"}
+        name = "uq_ticket_key_workspace",
+        columnNames = {"ticket_key", "workspace_id"}
     )
 )
 public class Ticket extends BaseEntity {
 
-    @Column(name = "external_id", nullable = false)
-    public String externalId;
+    @Column(name = "ticket_key", nullable = false)
+    public String ticketKey;
+
+    @Column(name = "workspace_id", nullable = false)
+    public UUID workspaceId;
+
+    @Column(name = "imported_by")
+    public UUID importedBy;
+
+    @Column(name = "project_key", nullable = false)
+    public String projectKey;
 
     @Column(nullable = false)
-    public String url;
+    public String summary;
 
-    @Column(nullable = false, length = 255)
-    public String title;
-
-    @Column(columnDefinition = "TEXT")
-    public String description;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    public TicketStatus status;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    public TicketPriority priority;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    public TicketSource source;
-
-    public String assignee;
-
-    @Column(name = "story_points")
-    public Integer storyPoints;
-
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "ticket_tags", joinColumns = @JoinColumn(name = "ticket_id"))
-    @Column(name = "tag")
-    public List<String> tags = new ArrayList<>();
+    @Column(name = "external_created_at", nullable = false)
+    public Instant externalCreatedAt;
 }
