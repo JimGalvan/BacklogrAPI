@@ -2,6 +2,7 @@ package com.backlogr.integration.jira.oauth.client;
 
 import com.backlogr.integration.jira.oauth.dto.AtlassianTokenResponse;
 import com.backlogr.integration.jira.oauth.dto.TokenExchangeRequest;
+import com.backlogr.integration.jira.oauth.dto.TokenRefreshRequest;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
@@ -17,4 +18,9 @@ public interface AtlassianAuthClient {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     AtlassianTokenResponse exchangeCode(TokenExchangeRequest request);
+
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    AtlassianTokenResponse refreshToken(TokenRefreshRequest request);
 }

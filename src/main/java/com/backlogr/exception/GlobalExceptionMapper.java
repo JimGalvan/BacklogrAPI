@@ -16,24 +16,34 @@ public class GlobalExceptionMapper implements ExceptionMapper<Exception> {
 
     @Override
     public Response toResponse(Exception e) {
-        if (e instanceof UnauthorizedException) {
+        Throwable root = rootCause(e);
+
+        if (root instanceof UnauthorizedException) {
             return Response.status(401)
                     .type(MediaType.APPLICATION_JSON)
                     .entity(new ErrorResponse(401, "Missing or invalid authentication token."))
                     .build();
         }
 
-        if (e instanceof ForbiddenException) {
+        if (root instanceof ForbiddenException) {
             return Response.status(403)
                     .type(MediaType.APPLICATION_JSON)
                     .entity(new ErrorResponse(403, "Authenticated but not authorised to perform this action."))
                     .build();
         }
 
-        LOG.errorf(e, "Unhandled exception: %s", e.getMessage());
+        LOG.errorf(root, "Unhandled exception: %s", root.getMessage());
         return Response.status(500)
                 .type(MediaType.APPLICATION_JSON)
                 .entity(new ErrorResponse(500, "Unexpected server error."))
                 .build();
+    }
+
+    private static Throwable rootCause(Throwable t) {
+        Throwable cause = t;
+        while (cause.getCause() != null) {
+            cause = cause.getCause();
+        }
+        return cause;
     }
 }

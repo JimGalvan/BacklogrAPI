@@ -14,6 +14,7 @@ public record JiraIssueResponse(
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record JiraFields(
         String summary,
+        String created,
         JiraStatus status,
         JiraPriority priority,
         JiraAssignee assignee,

@@ -1,6 +1,5 @@
 package com.backlogr.integration.jira;
 
-import com.backlogr.domain.user.UserIntegration;
 import com.backlogr.enums.ticket.TicketPriority;
 import com.backlogr.enums.ticket.TicketSource;
 import com.backlogr.enums.ticket.TicketStatus;
@@ -13,6 +12,9 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @ApplicationScoped
@@ -28,20 +30,20 @@ public class JiraTicketClient implements TicketClient {
     }
 
     @Override
-    public Result<TicketData> fetch(String key, UserIntegration integration) {
+    public Result<TicketData> fetch(String key, String cloudId, String accessToken) {
         try {
             JiraIssueResponse issue = jiraApiClient.getIssue(
-                integration.cloudId,
+                cloudId,
                 key,
-                "Bearer " + integration.accessToken
+                "Bearer " + accessToken
             );
-            return Result.ok(toExternalData(issue));
+            return Result.ok(toTicketData(issue));
         } catch (Exception e) {
             return Result.internalError("Failed to fetch Jira issue " + key + ": " + e.getMessage());
         }
     }
 
-    private TicketData toExternalData(JiraIssueResponse issue) {
+    private TicketData toTicketData(JiraIssueResponse issue) {
         JiraIssueResponse.JiraFields fields = issue.fields();
 
         return new TicketData(
@@ -52,8 +54,24 @@ public class JiraTicketClient implements TicketClient {
             mapPriority(fields.priority()),
             fields.assignee() != null ? fields.assignee().emailAddress() : null,
             fields.storyPoints(),
-            fields.labels() != null ? fields.labels() : List.of()
+            fields.labels() != null ? fields.labels() : List.of(),
+            parseCreated(fields.created())
         );
+    }
+
+    private static Instant parseCreated(String created) {
+        if (created == null || created.isBlank()) return Instant.now();
+        try {
+            // Jira returns "2024-03-15T10:30:00.000+0000" (no colon in offset)
+            return OffsetDateTime.parse(created, DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSxx"))
+                    .toInstant();
+        } catch (Exception e) {
+            try {
+                return Instant.parse(created);
+            } catch (Exception e2) {
+                return Instant.now();
+            }
+        }
     }
 
     private TicketStatus mapStatus(JiraIssueResponse.JiraStatus jiraStatus) {
