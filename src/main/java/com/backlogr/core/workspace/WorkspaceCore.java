@@ -1,5 +1,6 @@
 package com.backlogr.core.workspace;
 
+import com.backlogr.core.BaseCore;
 import com.backlogr.domain.workspace.Workspace;
 import com.backlogr.domain.workspace.WorkspaceMember;
 import com.backlogr.dto.workspace.CreateWorkspaceRequest;
@@ -8,8 +9,6 @@ import com.backlogr.dto.workspace.WorkspaceMemberResponse;
 import com.backlogr.dto.workspace.WorkspaceResponse;
 import com.backlogr.mapper.WorkspaceMapper;
 import com.backlogr.repository.user.UserRepository;
-import com.backlogr.repository.workspace.WorkspaceMemberRepository;
-import com.backlogr.repository.workspace.WorkspaceRepository;
 import com.backlogr.shared.Result;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -19,13 +18,7 @@ import java.util.List;
 import java.util.UUID;
 
 @ApplicationScoped
-public class WorkspaceCore {
-
-    @Inject
-    WorkspaceRepository workspaceRepository;
-
-    @Inject
-    WorkspaceMemberRepository workspaceMemberRepository;
+public class WorkspaceCore extends BaseCore {
 
     @Inject
     UserRepository userRepository;
@@ -63,19 +56,17 @@ public class WorkspaceCore {
     }
 
     public Result<List<WorkspaceMemberResponse>> getMembers(UUID workspaceId) {
-        if (workspaceRepository.findByIdOptional(workspaceId).isEmpty()) {
-            return Result.notFound("Workspace not found.");
-        }
+        Result<Workspace> workspaceResult = resolveWorkspace(workspaceId);
+        if (!workspaceResult.isSuccess()) return workspaceResult.asError();
         List<WorkspaceMember> members = workspaceMemberRepository.findByWorkspaceId(workspaceId);
         return Result.ok(workspaceMapper.toMemberResponseList(members));
     }
 
     @Transactional
     public Result<WorkspaceMemberResponse> inviteMember(UUID authenticatedUserId, UUID workspaceId, InviteMemberRequest request) {
-        Workspace workspace = workspaceRepository.findByIdOptional(workspaceId).orElse(null);
-        if (workspace == null) {
-            return Result.notFound("Workspace not found.");
-        }
+        Result<Workspace> workspaceResult = resolveWorkspace(workspaceId);
+        if (!workspaceResult.isSuccess()) return workspaceResult.asError();
+        Workspace workspace = workspaceResult.getValue();
         if (!authenticatedUserId.equals(workspace.ownerId)) {
             return Result.forbidden("Only the workspace owner can invite members.");
         }
@@ -98,10 +89,9 @@ public class WorkspaceCore {
 
     @Transactional
     public Result<Void> removeMember(UUID authenticatedUserId, UUID workspaceId, UUID targetUserId) {
-        Workspace workspace = workspaceRepository.findByIdOptional(workspaceId).orElse(null);
-        if (workspace == null) {
-            return Result.notFound("Workspace not found.");
-        }
+        Result<Workspace> workspaceResult = resolveWorkspace(workspaceId);
+        if (!workspaceResult.isSuccess()) return workspaceResult.asError();
+        Workspace workspace = workspaceResult.getValue();
         if (!authenticatedUserId.equals(workspace.ownerId)) {
             return Result.forbidden("Only the workspace owner can remove members.");
         }
@@ -126,5 +116,11 @@ public class WorkspaceCore {
         List<UUID> workspaceIds = workspaceMemberRepository.findWorkspaceIdsByUserId(userId);
         List<Workspace> workspaces = workspaceRepository.findAllByIds(workspaceIds);
         return Result.ok(workspaceMapper.toResponseList(workspaces));
+    }
+
+    private Result<Workspace> resolveWorkspace(UUID workspaceId) {
+        return workspaceRepository.findByIdOptional(workspaceId)
+                .map(Result::ok)
+                .orElseGet(() -> Result.notFound("Workspace not found."));
     }
 }

@@ -2,7 +2,7 @@ package com.backlogr.repository.user;
 
 import com.backlogr.domain.user.User;
 import com.backlogr.domain.user.UserIntegration;
-import com.backlogr.enums.integration.IntegrationProvider;
+import com.backlogr.enums.Provider;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 
@@ -12,11 +12,11 @@ import java.util.UUID;
 @ApplicationScoped
 public class UserIntegrationRepository implements PanacheRepository<UserIntegration> {
 
-    public Optional<UserIntegration> findByUserAndProvider(User user, IntegrationProvider provider) {
+    public Optional<UserIntegration> findByUserAndProvider(User user, Provider provider) {
         return find("user = ?1 and provider = ?2", user, provider).firstResultOptional();
     }
 
-    public Optional<UserIntegration> findByUserIdAndProvider(UUID userId, IntegrationProvider provider) {
+    public Optional<UserIntegration> findByUserIdAndProvider(UUID userId, Provider provider) {
         return find("user.id = ?1 and provider = ?2", userId, provider).firstResultOptional();
     }
 }

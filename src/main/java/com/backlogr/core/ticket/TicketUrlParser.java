@@ -1,6 +1,6 @@
 package com.backlogr.core.ticket;
 
-import com.backlogr.enums.ticket.TicketSource;
+import com.backlogr.enums.Provider;
 
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -15,11 +15,22 @@ public final class TicketUrlParser {
     public static Optional<ParsedTicketUrl> parse(String url) {
         Matcher jira = JIRA.matcher(url);
         if (jira.find()) {
-            return Optional.of(new ParsedTicketUrl(TicketSource.JIRA, jira.group(1)));
+            return Optional.of(new ParsedTicketUrl(Provider.JIRA, jira.group(1)));
         }
 
         return Optional.empty();
     }
 
-    public record ParsedTicketUrl(TicketSource source, String key) {}
+    public static final class ParsedTicketUrl {
+        private final Provider provider;
+        private final String key;
+
+        public ParsedTicketUrl(Provider provider, String key) {
+            this.provider = provider;
+            this.key = key;
+        }
+
+        public Provider getProvider() { return provider; }
+        public String getKey() { return key; }
+    }
 }

@@ -1,7 +1,7 @@
 package com.backlogr.integration.jira;
 
+import com.backlogr.enums.Provider;
 import com.backlogr.enums.ticket.TicketPriority;
-import com.backlogr.enums.ticket.TicketSource;
 import com.backlogr.enums.ticket.TicketStatus;
 import com.backlogr.integration.TicketClient;
 import com.backlogr.integration.TicketData;
@@ -25,8 +25,8 @@ public class JiraTicketClient implements TicketClient {
     JiraApiClient jiraApiClient;
 
     @Override
-    public boolean supports(TicketSource source) {
-        return source == TicketSource.JIRA;
+    public boolean supports(Provider provider) {
+        return provider == Provider.JIRA;
     }
 
     @Override

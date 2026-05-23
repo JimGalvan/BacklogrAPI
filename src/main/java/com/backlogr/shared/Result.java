@@ -52,6 +52,10 @@ public final class Result<T> {
         return new Result<>(null, 500, message);
     }
 
+    public <U> Result<U> asError() {
+        return new Result<>(null, status, message);
+    }
+
     // --- accessors ---
 
     public boolean isSuccess() {

@@ -1,7 +1,10 @@
 package com.backlogr.controller.workspace;
 
 import com.backlogr.controller.BaseController;
+import com.backlogr.core.ticket.TicketCore;
 import com.backlogr.core.workspace.WorkspaceCore;
+import com.backlogr.dto.ticket.TicketImportRequest;
+import com.backlogr.dto.ticket.TicketResponse;
 import com.backlogr.dto.workspace.CreateWorkspaceRequest;
 import com.backlogr.dto.workspace.InviteMemberRequest;
 import com.backlogr.dto.workspace.WorkspaceMemberResponse;
@@ -14,11 +17,13 @@ import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.jwt.JsonWebToken;
@@ -44,6 +49,9 @@ public class WorkspaceController extends BaseController {
 
     @Inject
     WorkspaceCore workspaceCore;
+
+    @Inject
+    TicketCore ticketCore;
 
     @Inject
     JsonWebToken jwt;
@@ -118,6 +126,65 @@ public class WorkspaceController extends BaseController {
     public Response removeMember(@PathParam("workspaceId") UUID workspaceId, @PathParam("userId") UUID targetUserId) {
         UUID authenticatedUserId = UUID.fromString(jwt.getSubject());
         Result<Void> result = workspaceCore.removeMember(authenticatedUserId, workspaceId, targetUserId);
+        if (!result.isSuccess()) return toResponse(result);
+        return Response.noContent().build();
+    }
+
+    @POST
+    @Path("/{workspaceId}/tickets/import")
+    @Operation(summary = "Import a ticket into a workspace")
+    @APIResponses({
+        @APIResponse(responseCode = HttpStatus.CREATED,              description = HttpStatus.Description.CREATED),
+        @APIResponse(responseCode = HttpStatus.BAD_REQUEST,          description = HttpStatus.Description.BAD_REQUEST),
+        @APIResponse(responseCode = HttpStatus.FORBIDDEN,            description = HttpStatus.Description.FORBIDDEN),
+        @APIResponse(responseCode = HttpStatus.NOT_FOUND,            description = HttpStatus.Description.NOT_FOUND),
+        @APIResponse(responseCode = HttpStatus.CONFLICT,             description = HttpStatus.Description.CONFLICT),
+        @APIResponse(responseCode = HttpStatus.UNPROCESSABLE_ENTITY, description = HttpStatus.Description.UNPROCESSABLE_ENTITY)
+    })
+    public Response importTicket(@PathParam("workspaceId") UUID workspaceId, @Valid TicketImportRequest request) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return toResponse(ticketCore.importTicket(userId, workspaceId, request));
+    }
+
+    @GET
+    @Path("/{workspaceId}/tickets")
+    @Operation(summary = "List tickets in a workspace", description = "Use ?mine=true to return only tickets imported by the authenticated user.")
+    @APIResponses({
+        @APIResponse(responseCode = HttpStatus.OK,        description = HttpStatus.Description.OK),
+        @APIResponse(responseCode = HttpStatus.FORBIDDEN, description = HttpStatus.Description.FORBIDDEN),
+        @APIResponse(responseCode = HttpStatus.NOT_FOUND, description = HttpStatus.Description.NOT_FOUND)
+    })
+    public Response getTickets(
+            @PathParam("workspaceId") UUID workspaceId,
+            @QueryParam("mine") @DefaultValue("false") boolean mine) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return toResponse(ticketCore.getTickets(userId, workspaceId, mine));
+    }
+
+    @GET
+    @Path("/{workspaceId}/tickets/{ticketKey}")
+    @Operation(summary = "Get a single ticket")
+    @APIResponses({
+        @APIResponse(responseCode = HttpStatus.OK,        description = HttpStatus.Description.OK),
+        @APIResponse(responseCode = HttpStatus.FORBIDDEN, description = HttpStatus.Description.FORBIDDEN),
+        @APIResponse(responseCode = HttpStatus.NOT_FOUND, description = HttpStatus.Description.NOT_FOUND)
+    })
+    public Response getTicket(@PathParam("workspaceId") UUID workspaceId, @PathParam("ticketKey") String ticketKey) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return toResponse(ticketCore.getTicket(userId, workspaceId, ticketKey));
+    }
+
+    @DELETE
+    @Path("/{workspaceId}/tickets/{ticketKey}")
+    @Operation(summary = "Remove a ticket from a workspace")
+    @APIResponses({
+        @APIResponse(responseCode = HttpStatus.NO_CONTENT, description = HttpStatus.Description.NO_CONTENT),
+        @APIResponse(responseCode = HttpStatus.FORBIDDEN,  description = HttpStatus.Description.FORBIDDEN),
+        @APIResponse(responseCode = HttpStatus.NOT_FOUND,  description = HttpStatus.Description.NOT_FOUND)
+    })
+    public Response deleteTicket(@PathParam("workspaceId") UUID workspaceId, @PathParam("ticketKey") String ticketKey) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        Result<Void> result = ticketCore.deleteTicket(userId, workspaceId, ticketKey);
         if (!result.isSuccess()) return toResponse(result);
         return Response.noContent().build();
     }

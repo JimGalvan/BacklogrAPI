@@ -1,8 +1,11 @@
 package com.backlogr.domain.ticket;
 
 import com.backlogr.domain.BaseEntity;
+import com.backlogr.enums.Provider;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
@@ -36,4 +39,8 @@ public class Ticket extends BaseEntity {
 
     @Column(name = "external_created_at", nullable = false)
     public Instant externalCreatedAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    public Provider provider;
 }

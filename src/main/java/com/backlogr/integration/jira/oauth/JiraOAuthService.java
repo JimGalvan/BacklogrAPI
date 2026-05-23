@@ -2,12 +2,12 @@ package com.backlogr.integration.jira.oauth;
 
 import com.backlogr.domain.user.User;
 import com.backlogr.domain.user.UserIntegration;
-import com.backlogr.enums.integration.IntegrationProvider;
+import com.backlogr.enums.Provider;
 import com.backlogr.integration.jira.oauth.client.AtlassianAuthClient;
 import com.backlogr.integration.jira.oauth.client.AtlassianResourceClient;
 import com.backlogr.integration.jira.oauth.dto.AtlassianResource;
 import com.backlogr.integration.jira.oauth.dto.AtlassianTokenResponse;
-import com.backlogr.integration.jira.oauth.dto.JiraTokens;
+import com.backlogr.integration.OAuthTokens;
 import com.backlogr.integration.jira.oauth.dto.TokenExchangeRequest;
 import com.backlogr.integration.jira.oauth.dto.TokenRefreshRequest;
 import com.backlogr.repository.user.UserIntegrationRepository;
@@ -80,14 +80,14 @@ public class JiraOAuthService {
         AtlassianResource resource = resources.getFirst();
 
         UserIntegration integration = userIntegrationRepository
-                .findByUserAndProvider(user, IntegrationProvider.JIRA)
+                .findByUserAndProvider(user, Provider.JIRA)
                 .orElse(null);
 
         boolean isNew = integration == null;
         if (isNew) {
             integration = new UserIntegration();
             integration.user = user;
-            integration.provider = IntegrationProvider.JIRA;
+            integration.provider = Provider.JIRA;
         }
 
         integration.accessToken = tokens.accessToken();
@@ -102,14 +102,14 @@ public class JiraOAuthService {
         return Result.ok("Jira connected successfully.");
     }
 
-    public Result<JiraTokens> refreshAccessToken(String refreshToken) {
+    public Result<OAuthTokens> refreshAccessToken(String refreshToken) {
         try {
             AtlassianTokenResponse tokens = authClient.refreshToken(
                     new TokenRefreshRequest("refresh_token", clientId, clientSecret, refreshToken)
             );
             Instant expiry = Instant.now().plusSeconds(tokens.expiresIn());
             String newRefreshToken = tokens.refreshToken() != null ? tokens.refreshToken() : refreshToken;
-            return Result.ok(new JiraTokens(tokens.accessToken(), newRefreshToken, expiry));
+            return Result.ok(new OAuthTokens(tokens.accessToken(), newRefreshToken, expiry));
         } catch (Exception e) {
             return Result.internalError("Failed to refresh Jira token: " + e.getMessage());
         }

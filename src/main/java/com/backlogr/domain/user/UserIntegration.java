@@ -1,7 +1,7 @@
 package com.backlogr.domain.user;
 
 import com.backlogr.domain.BaseEntity;
-import com.backlogr.enums.integration.IntegrationProvider;
+import com.backlogr.enums.Provider;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -30,7 +30,7 @@ public class UserIntegration extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    public IntegrationProvider provider;
+    public Provider provider;
 
     @Column(name = "access_token", columnDefinition = "TEXT", nullable = false)
     public String accessToken;
