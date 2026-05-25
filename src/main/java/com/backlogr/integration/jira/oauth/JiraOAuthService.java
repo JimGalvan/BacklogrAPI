@@ -7,7 +7,7 @@ import com.backlogr.integration.jira.oauth.client.AtlassianAuthClient;
 import com.backlogr.integration.jira.oauth.client.AtlassianResourceClient;
 import com.backlogr.integration.jira.oauth.dto.AtlassianResource;
 import com.backlogr.integration.jira.oauth.dto.AtlassianTokenResponse;
-import com.backlogr.integration.OAuthTokens;
+import com.backlogr.integration.AuthTokens;
 import com.backlogr.integration.jira.oauth.dto.TokenExchangeRequest;
 import com.backlogr.integration.jira.oauth.dto.TokenRefreshRequest;
 import com.backlogr.repository.user.UserIntegrationRepository;
@@ -102,14 +102,14 @@ public class JiraOAuthService {
         return Result.ok("Jira connected successfully.");
     }
 
-    public Result<OAuthTokens> refreshAccessToken(String refreshToken) {
+    public Result<AuthTokens> refreshAccessToken(String refreshToken) {
         try {
             AtlassianTokenResponse tokens = authClient.refreshToken(
                     new TokenRefreshRequest("refresh_token", clientId, clientSecret, refreshToken)
             );
             Instant expiry = Instant.now().plusSeconds(tokens.expiresIn());
             String newRefreshToken = tokens.refreshToken() != null ? tokens.refreshToken() : refreshToken;
-            return Result.ok(new OAuthTokens(tokens.accessToken(), newRefreshToken, expiry));
+            return Result.ok(new AuthTokens(tokens.accessToken(), newRefreshToken, expiry));
         } catch (Exception e) {
             return Result.internalError("Failed to refresh Jira token: " + e.getMessage());
         }

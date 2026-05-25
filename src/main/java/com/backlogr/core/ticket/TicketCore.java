@@ -1,16 +1,18 @@
 package com.backlogr.core.ticket;
 
 import com.backlogr.core.BaseCore;
+import com.backlogr.core.auth.AuthTokenManager;
 import com.backlogr.core.ticket.TicketUrlParser.ParsedTicketUrl;
 import com.backlogr.domain.ticket.Ticket;
 import com.backlogr.domain.user.UserIntegration;
 import com.backlogr.dto.ticket.TicketImportRequest;
 import com.backlogr.dto.ticket.TicketResponse;
 import com.backlogr.enums.Provider;
-import com.backlogr.integration.OAuthTokens;
+import com.backlogr.integration.AuthTokens;
 import com.backlogr.integration.TicketData;
 import com.backlogr.integration.ProviderService;
 import com.backlogr.integration.ProviderFactory;
+import com.backlogr.mapper.TicketDataMapper;
 import com.backlogr.mapper.TicketMapper;
 import com.backlogr.repository.ticket.TicketRepository;
 import com.backlogr.repository.user.UserIntegrationRepository;
@@ -34,7 +36,13 @@ public class TicketCore extends BaseCore {
     UserIntegrationRepository userIntegrationRepository;
 
     @Inject
+    AuthTokenManager authTokenManager;
+
+    @Inject
     TicketMapper ticketMapper;
+
+    @Inject
+    TicketDataMapper ticketDataMapper;
     @Inject
     Principal principal;
 
@@ -66,21 +74,16 @@ public class TicketCore extends BaseCore {
             return Result.badRequest("No " + ticketProvider + " account connected. Please connect your account first.");
         }
 
-        boolean tokenExpiredOrExpiringSoon = userIntegration.tokenExpiry == null
-                || userIntegration.tokenExpiry.isBefore(Instant.now().plusSeconds(300));
-
-        if (tokenExpiredOrExpiringSoon) {
-            Result<OAuthTokens> refresh = providerService.refreshToken(userIntegration.refreshToken);
-            if (!refresh.isSuccess()) {
-                return Result.badRequest(ticketProvider + " session expired. Please reconnect your account.");
-            }
-            OAuthTokens newTokens = refresh.getValue();
-            userIntegration.accessToken = newTokens.accessToken();
-            userIntegration.refreshToken = newTokens.refreshToken();
-            userIntegration.tokenExpiry = newTokens.tokenExpiry();
+        Result<AuthTokens> tokenResult = authTokenManager.resolveToken(userIntegration, providerService);
+        if (!tokenResult.isSuccess()) {
+            return Result.badRequest(ticketProvider + " session expired. Please reconnect your account.");
         }
+        AuthTokens tokens = tokenResult.getValue();
+        userIntegration.accessToken = tokens.accessToken();
+        userIntegration.refreshToken = tokens.refreshToken();
+        userIntegration.tokenExpiry = tokens.tokenExpiry();
 
-        Result<TicketData> fetchResult = providerService.fetch(parsed.getKey(), userIntegration.cloudId, userIntegration.accessToken);
+        Result<TicketData> fetchResult = providerService.fetch(parsed.getKey(), userIntegration.cloudId, tokens.accessToken());
         if (!fetchResult.isSuccess()) {
             return Result.internalError(fetchResult.getMessage());
         }
@@ -96,7 +99,7 @@ public class TicketCore extends BaseCore {
         ticket.provider = ticketProvider;
         ticketRepository.persist(ticket);
 
-        return Result.created(ticketMapper.toResponse(ticket));
+        return Result.created(ticketDataMapper.toResponse(ticket, data));
     }
 
     public Result<TicketResponse> getTicket(UUID userId, UUID workspaceId, String ticketKey) {
@@ -117,14 +120,19 @@ public class TicketCore extends BaseCore {
 
         if (userIntegration == null) return Result.notFound("user integration client not found");
 
-        Result<TicketData> dataResult = providerService.fetch(ticket.ticketKey, userIntegration.cloudId, userIntegration.accessToken);
+        Result<AuthTokens> tokenResult = authTokenManager.resolveToken(userIntegration, providerService);
+        if (!tokenResult.isSuccess()) {
+            return Result.badRequest(ticket.provider + " session expired. Please reconnect your account.");
+        }
+        AuthTokens tokens = tokenResult.getValue();
+        userIntegration.accessToken = tokens.accessToken();
+        userIntegration.refreshToken = tokens.refreshToken();
+        userIntegration.tokenExpiry = tokens.tokenExpiry();
+
+        Result<TicketData> dataResult = providerService.fetch(ticket.ticketKey, userIntegration.cloudId, tokens.accessToken());
         TicketData ticketData = dataResult.getValue();
 
-
-
-
-
-        return Result.ok(ticketMapper.toResponse(ticketResult.getValue()));
+        return Result.ok(ticketDataMapper.toResponse(ticket, ticketData));
     }
 
     public Result<List<TicketResponse>> getTickets(UUID userId, UUID workspaceId, boolean mine) {

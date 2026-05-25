@@ -3,7 +3,7 @@ package com.backlogr.integration.jira;
 import com.backlogr.enums.Provider;
 import com.backlogr.enums.ticket.TicketPriority;
 import com.backlogr.enums.ticket.TicketStatus;
-import com.backlogr.integration.OAuthTokens;
+import com.backlogr.integration.AuthTokens;
 import com.backlogr.integration.ProviderService;
 import com.backlogr.integration.TicketData;
 import com.backlogr.integration.jira.client.JiraHttpClient;
@@ -40,7 +40,7 @@ public class JiraService implements ProviderService {
     }
 
     @Override
-    public Result<OAuthTokens> refreshToken(String refreshToken) {
+    public Result<AuthTokens> refreshToken(String refreshToken) {
         return jiraOAuthService.refreshAccessToken(refreshToken);
     }
 
@@ -59,7 +59,7 @@ public class JiraService implements ProviderService {
         return new TicketData(
             issue.key(),
             fields.summary(),
-            null,
+            fields.description(),
             mapStatus(fields.status()),
             mapPriority(fields.priority()),
             fields.assignee() != null ? fields.assignee().emailAddress() : null,

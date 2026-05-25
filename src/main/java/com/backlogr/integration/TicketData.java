@@ -2,6 +2,7 @@ package com.backlogr.integration;
 
 import com.backlogr.enums.ticket.TicketPriority;
 import com.backlogr.enums.ticket.TicketStatus;
+import com.fasterxml.jackson.databind.JsonNode;
 
 import java.time.Instant;
 import java.util.List;
@@ -9,7 +10,7 @@ import java.util.List;
 public record TicketData(
     String key,
     String title,
-    String description,
+    JsonNode description,
     TicketStatus status,
     TicketPriority priority,
     String assignee,

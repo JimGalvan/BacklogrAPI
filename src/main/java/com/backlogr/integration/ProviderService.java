@@ -9,7 +9,7 @@ public interface ProviderService {
 
     Provider getProvider();
 
-    Result<OAuthTokens> refreshToken(String refreshToken);
+    Result<AuthTokens> refreshToken(String refreshToken);
 
     Result<TicketData> fetch(String key, String cloudId, String accessToken);
 }
