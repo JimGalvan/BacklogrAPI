@@ -11,7 +11,7 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 @RegisterRestClient(configKey = "atlassian-api")
 @Produces(MediaType.APPLICATION_JSON)
-public interface JiraApiClient {
+public interface JiraHttpClient {
 
     @GET
     @Path("/ex/jira/{cloudId}/rest/api/3/issue/{key}")

@@ -3,10 +3,12 @@ package com.backlogr.integration.jira;
 import com.backlogr.enums.Provider;
 import com.backlogr.enums.ticket.TicketPriority;
 import com.backlogr.enums.ticket.TicketStatus;
-import com.backlogr.integration.TicketClient;
+import com.backlogr.integration.OAuthTokens;
+import com.backlogr.integration.ProviderService;
 import com.backlogr.integration.TicketData;
-import com.backlogr.integration.jira.client.JiraApiClient;
+import com.backlogr.integration.jira.client.JiraHttpClient;
 import com.backlogr.integration.jira.dto.JiraIssueResponse;
+import com.backlogr.integration.jira.oauth.JiraOAuthService;
 import com.backlogr.shared.Result;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -18,11 +20,14 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @ApplicationScoped
-public class JiraTicketClient implements TicketClient {
+public class JiraService implements ProviderService {
+
+    @Inject
+    JiraOAuthService jiraOAuthService;
 
     @Inject
     @RestClient
-    JiraApiClient jiraApiClient;
+    JiraHttpClient httpClient;
 
     @Override
     public boolean supports(Provider provider) {
@@ -30,13 +35,19 @@ public class JiraTicketClient implements TicketClient {
     }
 
     @Override
+    public Provider getProvider() {
+        return Provider.JIRA;
+    }
+
+    @Override
+    public Result<OAuthTokens> refreshToken(String refreshToken) {
+        return jiraOAuthService.refreshAccessToken(refreshToken);
+    }
+
+    @Override
     public Result<TicketData> fetch(String key, String cloudId, String accessToken) {
         try {
-            JiraIssueResponse issue = jiraApiClient.getIssue(
-                cloudId,
-                key,
-                "Bearer " + accessToken
-            );
+            JiraIssueResponse issue = httpClient.getIssue(cloudId, key, "Bearer " + accessToken);
             return Result.ok(toTicketData(issue));
         } catch (Exception e) {
             return Result.internalError("Failed to fetch Jira issue " + key + ": " + e.getMessage());
@@ -45,7 +56,6 @@ public class JiraTicketClient implements TicketClient {
 
     private TicketData toTicketData(JiraIssueResponse issue) {
         JiraIssueResponse.JiraFields fields = issue.fields();
-
         return new TicketData(
             issue.key(),
             fields.summary(),
@@ -62,7 +72,6 @@ public class JiraTicketClient implements TicketClient {
     private static Instant parseCreated(String created) {
         if (created == null || created.isBlank()) return Instant.now();
         try {
-            // Jira returns "2024-03-15T10:30:00.000+0000" (no colon in offset)
             return OffsetDateTime.parse(created, DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSxx"))
                     .toInstant();
         } catch (Exception e) {

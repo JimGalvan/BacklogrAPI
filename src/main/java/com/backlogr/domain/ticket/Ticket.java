@@ -43,4 +43,8 @@ public class Ticket extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     public Provider provider;
+
+    public Provider getProvider() {
+        return this.provider;
+    }
 }

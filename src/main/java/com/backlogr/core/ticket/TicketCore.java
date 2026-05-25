@@ -6,10 +6,11 @@ import com.backlogr.domain.ticket.Ticket;
 import com.backlogr.domain.user.UserIntegration;
 import com.backlogr.dto.ticket.TicketImportRequest;
 import com.backlogr.dto.ticket.TicketResponse;
+import com.backlogr.enums.Provider;
 import com.backlogr.integration.OAuthTokens;
 import com.backlogr.integration.TicketData;
-import com.backlogr.integration.TicketIntegration;
-import com.backlogr.integration.IntegrationFactory;
+import com.backlogr.integration.ProviderService;
+import com.backlogr.integration.ProviderFactory;
 import com.backlogr.mapper.TicketMapper;
 import com.backlogr.repository.ticket.TicketRepository;
 import com.backlogr.repository.user.UserIntegrationRepository;
@@ -18,6 +19,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
+import java.security.Principal;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -32,10 +34,9 @@ public class TicketCore extends BaseCore {
     UserIntegrationRepository userIntegrationRepository;
 
     @Inject
-    IntegrationFactory integrationFactory;
-
-    @Inject
     TicketMapper ticketMapper;
+    @Inject
+    Principal principal;
 
     @Transactional
     public Result<TicketResponse> importTicket(UUID userId, UUID workspaceId, TicketImportRequest request) {
@@ -47,30 +48,31 @@ public class TicketCore extends BaseCore {
             return Result.badRequest("Unrecognised tracker URL. Supported: Jira.");
         }
 
+        Provider ticketProvider = parsed.getProvider();
         if (ticketRepository.existsByTicketKeyAndWorkspaceId(parsed.getKey(), workspaceId)) {
             return Result.conflict("Ticket " + parsed.getKey() + " has already been imported into this workspace.");
         }
 
-        TicketIntegration ticketIntegration = integrationFactory.build(parsed.getProvider()).orElse(null);
-        if (ticketIntegration == null) {
-            return Result.badRequest("No integration available for source: " + parsed.getProvider());
+        ProviderService providerService = ProviderFactory.build(ticketProvider).orElse(null);
+        if (providerService == null) {
+            return Result.badRequest("No integration available for source: " + ticketProvider);
         }
 
         UserIntegration userIntegration = userIntegrationRepository
-                .findByUserIdAndProvider(userId, ticketIntegration.getProvider())
+                .findByUserIdAndProvider(userId, providerService.getProvider())
                 .orElse(null);
 
         if (userIntegration == null) {
-            return Result.badRequest("No " + parsed.getProvider() + " account connected. Please connect your account first.");
+            return Result.badRequest("No " + ticketProvider + " account connected. Please connect your account first.");
         }
 
         boolean tokenExpiredOrExpiringSoon = userIntegration.tokenExpiry == null
                 || userIntegration.tokenExpiry.isBefore(Instant.now().plusSeconds(300));
 
         if (tokenExpiredOrExpiringSoon) {
-            Result<OAuthTokens> refresh = ticketIntegration.refreshToken(userIntegration.refreshToken);
+            Result<OAuthTokens> refresh = providerService.refreshToken(userIntegration.refreshToken);
             if (!refresh.isSuccess()) {
-                return Result.badRequest(parsed.getProvider() + " session expired. Please reconnect your account.");
+                return Result.badRequest(ticketProvider + " session expired. Please reconnect your account.");
             }
             OAuthTokens newTokens = refresh.getValue();
             userIntegration.accessToken = newTokens.accessToken();
@@ -78,7 +80,7 @@ public class TicketCore extends BaseCore {
             userIntegration.tokenExpiry = newTokens.tokenExpiry();
         }
 
-        Result<TicketData> fetchResult = ticketIntegration.fetch(parsed.getKey(), userIntegration.cloudId, userIntegration.accessToken);
+        Result<TicketData> fetchResult = providerService.fetch(parsed.getKey(), userIntegration.cloudId, userIntegration.accessToken);
         if (!fetchResult.isSuccess()) {
             return Result.internalError(fetchResult.getMessage());
         }
@@ -91,7 +93,7 @@ public class TicketCore extends BaseCore {
         ticket.projectKey = parsed.getKey().split("-")[0];
         ticket.summary = data.title();
         ticket.externalCreatedAt = data.externalCreatedAt();
-        ticket.provider = parsed.getProvider();
+        ticket.provider = ticketProvider;
         ticketRepository.persist(ticket);
 
         return Result.created(ticketMapper.toResponse(ticket));
@@ -103,6 +105,24 @@ public class TicketCore extends BaseCore {
 
         Result<Ticket> ticketResult = resolveTicket(ticketKey, workspaceId);
         if (!ticketResult.isSuccess()) return ticketResult.asError();
+
+        Ticket ticket = ticketResult.getValue();
+
+        ProviderService providerService = ProviderFactory.build(ticket.getProvider()).orElse(null);
+        if (providerService == null) return Result.notFound("Provider client not found");
+
+        UserIntegration userIntegration = userIntegrationRepository
+                .findByUserIdAndProvider(userId, providerService.getProvider())
+                .orElse(null);
+
+        if (userIntegration == null) return Result.notFound("user integration client not found");
+
+        Result<TicketData> dataResult = providerService.fetch(ticket.ticketKey, userIntegration.cloudId, userIntegration.accessToken);
+        TicketData ticketData = dataResult.getValue();
+
+
+
+
 
         return Result.ok(ticketMapper.toResponse(ticketResult.getValue()));
     }
