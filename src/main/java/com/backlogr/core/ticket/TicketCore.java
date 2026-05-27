@@ -6,9 +6,11 @@ import com.backlogr.core.ticket.TicketUrlParser.ParsedTicketUrl;
 import com.backlogr.domain.ticket.Ticket;
 import com.backlogr.domain.user.UserIntegration;
 import com.backlogr.dto.ticket.TicketImportRequest;
-import com.backlogr.dto.ticket.TicketResponse;
+import com.backlogr.dto.ticket.TicketAggregateResponse;
+import com.backlogr.dto.ticket.TicketCommentResponse;
 import com.backlogr.enums.Provider;
 import com.backlogr.integration.AuthTokens;
+import com.backlogr.integration.TicketComment;
 import com.backlogr.integration.TicketData;
 import com.backlogr.integration.ProviderService;
 import com.backlogr.integration.ProviderFactory;
@@ -20,6 +22,7 @@ import com.backlogr.shared.Result;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import org.jboss.logging.Logger;
 
 import java.security.Principal;
 import java.time.Instant;
@@ -28,6 +31,8 @@ import java.util.UUID;
 
 @ApplicationScoped
 public class TicketCore extends BaseCore {
+
+    private static final Logger logger = Logger.getLogger(TicketCore.class);
 
     @Inject
     TicketRepository ticketRepository;
@@ -47,7 +52,7 @@ public class TicketCore extends BaseCore {
     Principal principal;
 
     @Transactional
-    public Result<TicketResponse> importTicket(UUID userId, UUID workspaceId, TicketImportRequest request) {
+    public Result<TicketAggregateResponse> importTicket(UUID userId, UUID workspaceId, TicketImportRequest request) {
         Result<Void> guard = requireWorkspaceMember(userId, workspaceId);
         if (!guard.isSuccess()) return guard.asError();
 
@@ -94,7 +99,7 @@ public class TicketCore extends BaseCore {
         ticket.workspaceId = workspaceId;
         ticket.importedBy = userId;
         ticket.projectKey = parsed.getKey().split("-")[0];
-        ticket.summary = data.title();
+        ticket.title = data.title();
         ticket.externalCreatedAt = data.externalCreatedAt();
         ticket.provider = ticketProvider;
         ticketRepository.persist(ticket);
@@ -102,12 +107,18 @@ public class TicketCore extends BaseCore {
         return Result.created(ticketDataMapper.toResponse(ticket, data));
     }
 
-    public Result<TicketResponse> getTicket(UUID userId, UUID workspaceId, String ticketKey) {
+    @Transactional
+    public Result<TicketAggregateResponse> getTicket(UUID userId, UUID workspaceId, String ticketKey) {
+        logger.infof("Fetching ticket %s in workspace %s for user %s", ticketKey, workspaceId, userId);
+
         Result<Void> guard = requireWorkspaceMember(userId, workspaceId);
         if (!guard.isSuccess()) return guard.asError();
 
         Result<Ticket> ticketResult = resolveTicket(ticketKey, workspaceId);
-        if (!ticketResult.isSuccess()) return ticketResult.asError();
+        if (!ticketResult.isSuccess()) {
+            logger.warnf("Ticket %s not found in workspace %s", ticketKey, workspaceId);
+            return ticketResult.asError();
+        }
 
         Ticket ticket = ticketResult.getValue();
 
@@ -122,6 +133,7 @@ public class TicketCore extends BaseCore {
 
         Result<AuthTokens> tokenResult = authTokenManager.resolveToken(userIntegration, providerService);
         if (!tokenResult.isSuccess()) {
+            logger.warnf("Token resolution failed for user %s on provider %s", userId, ticket.provider);
             return Result.badRequest(ticket.provider + " session expired. Please reconnect your account.");
         }
         AuthTokens tokens = tokenResult.getValue();
@@ -130,12 +142,16 @@ public class TicketCore extends BaseCore {
         userIntegration.tokenExpiry = tokens.tokenExpiry();
 
         Result<TicketData> dataResult = providerService.fetch(ticket.ticketKey, userIntegration.cloudId, tokens.accessToken());
-        TicketData ticketData = dataResult.getValue();
+        if (!dataResult.isSuccess()) {
+            logger.errorf("Failed to fetch ticket %s from provider %s: %s", ticketKey, ticket.provider, dataResult.getMessage());
+            return Result.internalError(dataResult.getMessage());
+        }
 
-        return Result.ok(ticketDataMapper.toResponse(ticket, ticketData));
+        logger.infof("Successfully fetched ticket %s from %s", ticketKey, ticket.provider);
+        return Result.ok(ticketDataMapper.toResponse(ticket, dataResult.getValue()));
     }
 
-    public Result<List<TicketResponse>> getTickets(UUID userId, UUID workspaceId, boolean mine) {
+    public Result<List<TicketAggregateResponse>> getTickets(UUID userId, UUID workspaceId, boolean mine) {
         Result<Void> guard = requireWorkspaceMember(userId, workspaceId);
         if (!guard.isSuccess()) return guard.asError();
 
@@ -144,6 +160,49 @@ public class TicketCore extends BaseCore {
                 : ticketRepository.findByWorkspaceId(workspaceId);
 
         return Result.ok(ticketMapper.toResponseList(tickets));
+    }
+
+    public Result<List<TicketCommentResponse>> getTicketComments(UUID userId, UUID workspaceId, String ticketKey) {
+        Result<Void> guard = requireWorkspaceMember(userId, workspaceId);
+        if (!guard.isSuccess()) return guard.asError();
+
+        Result<Ticket> ticketResult = resolveTicket(ticketKey, workspaceId);
+        if (!ticketResult.isSuccess()) return ticketResult.asError();
+
+        Ticket ticket = ticketResult.getValue();
+
+        ProviderService providerService = ProviderFactory.build(ticket.getProvider()).orElse(null);
+        if (providerService == null) return Result.notFound("Provider client not found");
+
+        UserIntegration userIntegration = userIntegrationRepository
+                .findByUserIdAndProvider(userId, providerService.getProvider())
+                .orElse(null);
+        if (userIntegration == null) return Result.notFound("User integration not found");
+
+        Result<AuthTokens> tokenResult = authTokenManager.resolveToken(userIntegration, providerService);
+        if (!tokenResult.isSuccess()) {
+            return Result.badRequest(ticket.provider + " session expired. Please reconnect your account.");
+        }
+        AuthTokens tokens = tokenResult.getValue();
+        userIntegration.accessToken = tokens.accessToken();
+        userIntegration.refreshToken = tokens.refreshToken();
+        userIntegration.tokenExpiry = tokens.tokenExpiry();
+
+        Result<List<TicketComment>> commentsResult = providerService.fetchComments(ticket.ticketKey, userIntegration.cloudId, tokens.accessToken());
+        if (!commentsResult.isSuccess()) return Result.internalError(commentsResult.getMessage());
+
+        List<TicketCommentResponse> response = commentsResult.getValue().stream()
+                .map(comment -> new TicketCommentResponse(
+                        comment.id(),
+                        comment.authorEmail(),
+                        comment.authorName(),
+                        comment.body(),
+                        comment.createdAt(),
+                        comment.updatedAt()
+                ))
+                .toList();
+
+        return Result.ok(response);
     }
 
     @Transactional

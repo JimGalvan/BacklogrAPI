@@ -1,7 +1,7 @@
 package com.backlogr.mapper;
 
 import com.backlogr.domain.ticket.Ticket;
-import com.backlogr.dto.ticket.TicketResponse;
+import com.backlogr.dto.ticket.TicketAggregateResponse;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
@@ -12,7 +12,7 @@ public interface TicketMapper {
 
     @Mapping(target = "createdAt",  source = "externalCreatedAt")
     @Mapping(target = "importedAt", source = "createdAt")
-    TicketResponse toResponse(Ticket ticket);
+    TicketAggregateResponse toResponse(Ticket ticket);
 
-    List<TicketResponse> toResponseList(List<Ticket> tickets);
+    List<TicketAggregateResponse> toResponseList(List<Ticket> tickets);
 }

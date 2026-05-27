@@ -4,7 +4,8 @@ import com.backlogr.controller.BaseController;
 import com.backlogr.core.ticket.TicketCore;
 import com.backlogr.core.workspace.WorkspaceCore;
 import com.backlogr.dto.ticket.TicketImportRequest;
-import com.backlogr.dto.ticket.TicketResponse;
+import com.backlogr.dto.ticket.TicketAggregateResponse;
+import com.backlogr.dto.ticket.TicketCommentResponse;
 import com.backlogr.dto.workspace.CreateWorkspaceRequest;
 import com.backlogr.dto.workspace.InviteMemberRequest;
 import com.backlogr.dto.workspace.WorkspaceMemberResponse;
@@ -172,6 +173,19 @@ public class WorkspaceController extends BaseController {
     public Response getTicket(@PathParam("workspaceId") UUID workspaceId, @PathParam("ticketKey") String ticketKey) {
         UUID userId = UUID.fromString(jwt.getSubject());
         return toResponse(ticketCore.getTicket(userId, workspaceId, ticketKey));
+    }
+
+    @GET
+    @Path("/{workspaceId}/tickets/{ticketKey}/comments")
+    @Operation(summary = "Get comments for a ticket")
+    @APIResponses({
+        @APIResponse(responseCode = HttpStatus.OK,        description = HttpStatus.Description.OK),
+        @APIResponse(responseCode = HttpStatus.FORBIDDEN, description = HttpStatus.Description.FORBIDDEN),
+        @APIResponse(responseCode = HttpStatus.NOT_FOUND, description = HttpStatus.Description.NOT_FOUND)
+    })
+    public Response getTicketComments(@PathParam("workspaceId") UUID workspaceId, @PathParam("ticketKey") String ticketKey) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return toResponse(ticketCore.getTicketComments(userId, workspaceId, ticketKey));
     }
 
     @DELETE

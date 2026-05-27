@@ -5,8 +5,10 @@ import com.backlogr.enums.ticket.TicketPriority;
 import com.backlogr.enums.ticket.TicketStatus;
 import com.backlogr.integration.AuthTokens;
 import com.backlogr.integration.ProviderService;
+import com.backlogr.integration.TicketComment;
 import com.backlogr.integration.TicketData;
 import com.backlogr.integration.jira.client.JiraHttpClient;
+import com.backlogr.integration.jira.dto.JiraCommentListResponse;
 import com.backlogr.integration.jira.dto.JiraIssueResponse;
 import com.backlogr.integration.jira.oauth.JiraOAuthService;
 import com.backlogr.shared.Result;
@@ -52,6 +54,31 @@ public class JiraService implements ProviderService {
         } catch (Exception e) {
             return Result.internalError("Failed to fetch Jira issue " + key + ": " + e.getMessage());
         }
+    }
+
+    @Override
+    public Result<List<TicketComment>> fetchComments(String key, String cloudId, String accessToken) {
+        try {
+            JiraCommentListResponse response = httpClient.getComments(cloudId, key, "Bearer " + accessToken);
+            List<TicketComment> comments = response.comments().stream()
+                    .map(this::toTicketComment)
+                    .toList();
+            return Result.ok(comments);
+        } catch (Exception e) {
+            return Result.internalError("Failed to fetch comments for Jira issue " + key + ": " + e.getMessage());
+        }
+    }
+
+    private TicketComment toTicketComment(JiraCommentListResponse.JiraComment comment) {
+        JiraCommentListResponse.JiraAuthor author = comment.author();
+        return new TicketComment(
+            comment.id(),
+            author != null ? author.emailAddress() : null,
+            author != null ? author.displayName() : null,
+            comment.body(),
+            parseCreated(comment.created()),
+            parseCreated(comment.updated())
+        );
     }
 
     private TicketData toTicketData(JiraIssueResponse issue) {

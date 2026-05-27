@@ -1,5 +1,6 @@
 package com.backlogr.integration.jira.client;
 
+import com.backlogr.integration.jira.dto.JiraCommentListResponse;
 import com.backlogr.integration.jira.dto.JiraIssueResponse;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.HeaderParam;
@@ -16,6 +17,14 @@ public interface JiraHttpClient {
     @GET
     @Path("/ex/jira/{cloudId}/rest/api/3/issue/{key}")
     JiraIssueResponse getIssue(
+        @PathParam("cloudId") String cloudId,
+        @PathParam("key") String key,
+        @HeaderParam("Authorization") String authorization
+    );
+
+    @GET
+    @Path("/ex/jira/{cloudId}/rest/api/3/issue/{key}/comment")
+    JiraCommentListResponse getComments(
         @PathParam("cloudId") String cloudId,
         @PathParam("key") String key,
         @HeaderParam("Authorization") String authorization

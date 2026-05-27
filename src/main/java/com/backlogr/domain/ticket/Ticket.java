@@ -35,7 +35,7 @@ public class Ticket extends BaseEntity {
     public String projectKey;
 
     @Column(nullable = false)
-    public String summary;
+    public String title;
 
     @Column(name = "external_created_at", nullable = false)
     public Instant externalCreatedAt;
