@@ -40,6 +40,26 @@ public class AiController extends BaseController {
     JsonWebToken jwt;
 
     @GET
+    @Path("/tickets/{ticketKey}/test-cases")
+    @Produces(MediaType.SERVER_SENT_EVENTS)
+    @Blocking
+    @Operation(
+            summary     = "Generate test cases for a ticket",
+            description = "Streams high-level QA test scenarios grouped by component, integration, system, system integration, and acceptance testing. Tokens are emitted as Server-Sent Events."
+    )
+    @APIResponses({
+            @APIResponse(responseCode = OK,        description = Description.OK),
+            @APIResponse(responseCode = FORBIDDEN,  description = Description.FORBIDDEN),
+            @APIResponse(responseCode = NOT_FOUND,  description = Description.NOT_FOUND)
+    })
+    public Multi<String> generateTestCases(
+            @PathParam("workspaceId") UUID workspaceId,
+            @PathParam("ticketKey")   String ticketKey) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return aiCore.generateTestCases(userId, workspaceId, ticketKey);
+    }
+
+    @GET
     @Path("/tickets/{ticketKey}/refinement")
     @Produces(MediaType.SERVER_SENT_EVENTS)
     @Blocking

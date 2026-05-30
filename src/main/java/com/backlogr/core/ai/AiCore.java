@@ -35,6 +35,11 @@ public class AiCore extends BaseCore {
         return streamTicketAnalysis(userId, workspaceId, ticketKey, this::buildTlDrPrompt);
     }
 
+    public Multi<String> generateTestCases(UUID userId, UUID workspaceId, String ticketKey) {
+        logger.infof("Generating test cases for ticket %s in workspace %s", ticketKey, workspaceId);
+        return streamTicketAnalysis(userId, workspaceId, ticketKey, this::buildTestCasesPrompt);
+    }
+
     public Multi<String> runRefinementAnalysis(UUID userId, UUID workspaceId, String ticketKey) {
         logger.infof("Running refinement analysis for ticket %s in workspace %s", ticketKey, workspaceId);
 
@@ -104,15 +109,15 @@ public class AiCore extends BaseCore {
         return List.of(
                 AiMessage.system("""
                         You are a senior software engineering reviewer validating an automated backlog refinement analysis.
-
+                        
                         You will receive:
                         1. The original ticket, including description, acceptance criteria, and comments.
                         2. A generated refinement analysis in JSON format.
-
+                        
                         Your task is to review the generated analysis for correctness and usefulness. Do not generate \
                         a new analysis from scratch. Instead, remove or reclassify findings that are invalid, \
                         redundant, already resolved, out of scope, or unsupported by the ticket context.
-
+                        
                         Core review rules:
                         1. Treat the full ticket context, including comments, as the source of truth.
                         2. Treat later comments as resolving earlier questions unless there is a clear contradiction.
@@ -128,7 +133,7 @@ public class AiCore extends BaseCore {
                         8. Do not add new findings unless necessary to preserve a valid point from a removed or reclassified finding.
                         9. Prefer fewer, higher-confidence findings over many low-confidence findings.
                         10. Preserve the original intent and wording where possible, but rewrite findings when needed for accuracy.
-
+                        
                         Classification rules:
                         - openQuestions: only unanswered questions that materially affect implementation, testing, \
                           release, security, data handling, permissions, user experience, or support. The answer must \
@@ -139,16 +144,16 @@ public class AiCore extends BaseCore {
                           operational issues, or missed expectations in this ticket.
                         - acceptanceCriteriaGaps: missing testable behaviors or scenarios that should be promoted \
                           into acceptance criteria before or during implementation.
-
+                        
                         Category priority:
                         - Unanswered and implementation-blocking or materially scope-changing → openQuestions
                         - Resolved in comments but missing from the ticket body → scopeClarifications
                         - Resolved in comments but should be testable before completion → acceptanceCriteriaGaps
                         - Describes a possible implementation or test failure mode → risksAndEdgeCases
                         - Future work explicitly deferred and not needed for this ticket → remove
-
+                        
                         Return only valid JSON in this exact shape — no markdown, no commentary outside the JSON:
-
+                        
                         {
                           "refinementAnalysis": {
                             "summary": "string",
@@ -176,15 +181,15 @@ public class AiCore extends BaseCore {
                         """),
                 AiMessage.user("""
                         Ticket title: %s
-
+                        
                         Description:
                         %s
-
+                        
                         Comments:
                         %s
-
+                        
                         ---
-
+                        
                         First-pass findings to review (plain-text list):
                         %s
                         """.formatted(
@@ -200,28 +205,125 @@ public class AiCore extends BaseCore {
         return List.of(
                 AiMessage.system("""
                         You are a Senior Software Engineer identifying refinement concerns in a backlog ticket.
-
+                        
                         Read the ticket description, acceptance criteria, and comments. Treat comments as part of \
                         the source of truth — later comments may resolve earlier questions. Do not raise a concern \
                         that is already answered anywhere in the provided context. Do not fabricate concerns.
-
+                        
                         If the ticket is too sparse to analyse meaningfully, say so in the SUMMARY and list only \
                         what you can genuinely support. If it is already well-groomed, say so and list only \
                         high-value findings.
-
+                        
                         Output a plain-text list using this exact format — nothing else:
-
+                        
                         SUMMARY: <1-2 sentence readiness verdict>
                         [category] Title: <short title> | Description: <concise finding>
-
+                        
                         Valid categories: openQuestion, scopeClarification, riskOrEdgeCase, acceptanceCriteriaGap\
                         """),
                 AiMessage.user("""
                         Ticket title: %s
-
+                        
                         Description:
                         %s
+                        
+                        Comments:
+                        %s
+                        """.formatted(
+                        ticket.title(),
+                        extractText(ticket.description()),
+                        formatComments(comments)
+                ))
+        );
+    }
 
+    private List<AiMessage> buildTestCasesPrompt(TicketAggregateResponse ticket, List<TicketCommentResponse> comments) {
+        return List.of(
+                AiMessage.system("""
+                        You are a senior QA engineer.
+                        
+                        Generate high-level test cases for the feature described in the ticket below.
+                        Use only the ticket title, description, priority, tags, and comments as your source of information.
+                        
+                        Generate test cases only. Do not generate detailed test steps.
+                        Do not include automation code. Do not include low-value test cases. Avoid duplicates.
+                        
+                        Do not infer scenario steps or user flows that are not explicitly mentioned in the ticket or comments.
+                        For example, do not assume a flow such as login → dashboard → user settings unless those steps are stated or clearly implied by the ticket or comments.
+                        If the ticket lacks enough information to support a scenario, do not invent missing actions, systems, roles, data, or navigation paths.
+                        
+                        Pick exactly 1 test case from each of the following categories.
+                        For each category, choose the single most important test case based on user impact, business risk, severity, priority, security exposure, integration risk, and likelihood of failure.
+                        
+                        Use these 6 test categories:
+                        
+                        1. Integration Testing — how internal components, modules, services, APIs, or data layers involved in the feature work together.
+                        2. System Testing — complete application behavior as a whole against the functional and non-functional requirements stated in the ticket.
+                        3. End-to-End Testing — the most important supported user or business flow explicitly described or clearly supported by the ticket or comments.
+                        4. Regression Testing — the most important existing behavior that could break because of this change.
+                        5. Negative Testing — the most important invalid, unsupported, or failure condition relevant to the feature.
+                        6. Security Testing — the most important security, permission, authorization, authentication, data exposure, or abuse-risk scenario relevant to the feature.
+                                                
+                        Respond with a single valid JSON object and nothing else — no markdown, no code fences, no explanation outside the JSON. Use this exact structure: 
+                        {
+                            "testCases": {
+                                "integrationTesting": [
+                                    {
+                                        "id": "IT-01",
+                                        "scenario": "Verify that internal components, modules, services, APIs, or data layers involved in the feature work together correctly.",
+                                        "expectedOutcome": "All integrated parts exchange data correctly, dependencies respond as expected, and the feature works across the involved internal boundaries.",
+                                        "riskCovered": "Integration defects between internal components, modules, services, APIs, or data layers."
+                                    }
+                                ],
+                                "systemTesting": [
+                                    {
+                                        "id": "ST-01",
+                                        "scenario": "Verify that the complete application behavior satisfies the functional and non-functional requirements stated in the ticket.",
+                                        "expectedOutcome": "The application behaves as expected as a whole and meets the stated functional and non-functional requirements.",
+                                        "riskCovered": "System-level failure to meet ticket requirements."
+                                    }
+                                ],
+                                "endToEndTesting": [
+                                    {
+                                        "id": "E2E-01",
+                                        "scenario": "Verify that the most important supported user or business flow explicitly described or clearly supported by the ticket or comments can be completed from start to finish.",
+                                        "expectedOutcome": "The user or business actor completes the full flow successfully and the system reaches the expected final state.",
+                                        "riskCovered": "Failure of the primary supported user or business flow."
+                                    }
+                                ],
+                                "regressionTesting": [
+                                    {
+                                        "id": "RT-01",
+                                        "scenario": "Verify that the most important existing behavior that could be affected by this change still works as expected.",
+                                        "expectedOutcome": "Existing related workflows, APIs, integrations, and data behavior continue to function correctly unless explicitly changed by the ticket.",
+                                        "riskCovered": "Regression risk to existing functionality impacted by the change."
+                                    }
+                                ],
+                                "negativeTesting": [
+                                    {
+                                        "id": "NT-01",
+                                        "scenario": "Verify that the most important invalid, unsupported, or failure condition relevant to the feature is handled correctly.",
+                                        "expectedOutcome": "The system rejects or handles the invalid or failure condition safely, returns the expected error or validation response, and avoids unintended state changes.",
+                                        "riskCovered": "Incorrect handling of invalid input, unsupported usage, or failure conditions."
+                                    }
+                                ],
+                                "securityTesting": [
+                                    {
+                                        "id": "SEC-01",
+                                        "scenario": "Verify that the most important security, permission, authorization, authentication, data exposure, or abuse-risk scenario relevant to the feature is protected.",
+                                        "expectedOutcome": "Unauthorized or unsafe access is blocked, sensitive data is not exposed, and the system enforces the expected security controls.",
+                                        "riskCovered": "Security, authorization, authentication, permission, data exposure, or abuse risk."
+                                    }
+                                ]
+                            }
+                        }
+                        """),
+                AiMessage.user("""
+                        Ticket: %s
+                        
+                        Description:
+                        %s
+                        
                         Comments:
                         %s
                         """.formatted(
