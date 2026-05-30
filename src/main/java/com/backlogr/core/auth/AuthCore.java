@@ -1,11 +1,11 @@
 package com.backlogr.core.auth;
 
-import com.backlogr.domain.user.User;
-import com.backlogr.dto.auth.LoginRequest;
-import com.backlogr.dto.auth.LoginResponse;
-import com.backlogr.dto.auth.RefreshRequest;
+import com.backlogr.domain.entities.user.User;
+import com.backlogr.domain.dto.auth.LoginRequest;
+import com.backlogr.domain.dto.auth.LoginResponse;
+import com.backlogr.domain.dto.auth.RefreshRequest;
 import com.backlogr.repository.user.UserRepository;
-import com.backlogr.shared.Result;
+import com.backlogr.common.Result;
 import io.smallrye.jwt.build.Jwt;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;

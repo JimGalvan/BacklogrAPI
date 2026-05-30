@@ -1,6 +1,6 @@
 package com.backlogr.repository.workspace;
 
-import com.backlogr.domain.workspace.Workspace;
+import com.backlogr.domain.entities.workspace.Workspace;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 

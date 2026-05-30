@@ -21,10 +21,10 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.util.UUID;
 
-import static com.backlogr.shared.HttpStatus.Description;
-import static com.backlogr.shared.HttpStatus.FORBIDDEN;
-import static com.backlogr.shared.HttpStatus.NOT_FOUND;
-import static com.backlogr.shared.HttpStatus.OK;
+import static com.backlogr.common.HttpStatus.Description;
+import static com.backlogr.common.HttpStatus.FORBIDDEN;
+import static com.backlogr.common.HttpStatus.NOT_FOUND;
+import static com.backlogr.common.HttpStatus.OK;
 
 @Path("/api/v1/workspaces/{workspaceId}/ai")
 @Produces(MediaType.APPLICATION_JSON)

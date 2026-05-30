@@ -1,6 +1,6 @@
 package com.backlogr.repository.ticket;
 
-import com.backlogr.domain.ticket.Ticket;
+import com.backlogr.domain.entities.ticket.Ticket;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 

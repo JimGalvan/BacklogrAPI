@@ -1,9 +1,9 @@
 package com.backlogr.core.auth;
 
-import com.backlogr.domain.auth.ExternalAuthConstants;
-import com.backlogr.integration.jira.oauth.JiraOAuthService;
-import com.backlogr.integration.jira.oauth.JiraOAuthStateService;
-import com.backlogr.shared.Result;
+import com.backlogr.common.auth.ExternalAuthConstants;
+import com.backlogr.services.jira.JiraOAuthService;
+import com.backlogr.services.jira.JiraOAuthStateService;
+import com.backlogr.common.Result;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;

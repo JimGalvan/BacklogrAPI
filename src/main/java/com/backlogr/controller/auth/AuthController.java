@@ -2,11 +2,11 @@ package com.backlogr.controller.auth;
 
 import com.backlogr.controller.BaseController;
 import com.backlogr.core.auth.AuthCore;
-import com.backlogr.dto.auth.LoginRequest;
-import com.backlogr.dto.auth.LoginResponse;
-import com.backlogr.dto.auth.RefreshRequest;
-import com.backlogr.shared.HttpStatus;
-import com.backlogr.shared.Result;
+import com.backlogr.domain.dto.auth.LoginRequest;
+import com.backlogr.domain.dto.auth.LoginResponse;
+import com.backlogr.domain.dto.auth.RefreshRequest;
+import com.backlogr.common.HttpStatus;
+import com.backlogr.common.Result;
 import io.quarkus.security.Authenticated;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.inject.Inject;

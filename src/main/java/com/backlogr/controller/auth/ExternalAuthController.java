@@ -2,8 +2,8 @@ package com.backlogr.controller.auth;
 
 import com.backlogr.controller.BaseController;
 import com.backlogr.core.auth.ExternalAuthCore;
-import com.backlogr.shared.HttpStatus;
-import com.backlogr.shared.Result;
+import com.backlogr.common.HttpStatus;
+import com.backlogr.common.Result;
 import io.quarkus.security.Authenticated;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.inject.Inject;

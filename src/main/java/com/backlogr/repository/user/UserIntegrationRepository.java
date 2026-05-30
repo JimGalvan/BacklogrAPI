@@ -1,8 +1,8 @@
 package com.backlogr.repository.user;
 
-import com.backlogr.domain.user.User;
-import com.backlogr.domain.user.UserIntegration;
-import com.backlogr.enums.Provider;
+import com.backlogr.domain.entities.user.User;
+import com.backlogr.domain.entities.user.UserIntegration;
+import com.backlogr.domain.enums.Provider;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 

@@ -1,6 +1,6 @@
 package com.backlogr.core.ticket;
 
-import com.backlogr.enums.Provider;
+import com.backlogr.domain.enums.Provider;
 
 import java.util.Optional;
 import java.util.regex.Matcher;

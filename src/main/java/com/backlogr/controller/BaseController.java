@@ -1,7 +1,7 @@
 package com.backlogr.controller;
 
-import com.backlogr.shared.ErrorResponse;
-import com.backlogr.shared.Result;
+import com.backlogr.common.ErrorResponse;
+import com.backlogr.common.Result;
 import jakarta.ws.rs.core.Response;
 
 public abstract class BaseController {

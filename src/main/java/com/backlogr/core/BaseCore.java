@@ -2,7 +2,7 @@ package com.backlogr.core;
 
 import com.backlogr.repository.workspace.WorkspaceMemberRepository;
 import com.backlogr.repository.workspace.WorkspaceRepository;
-import com.backlogr.shared.Result;
+import com.backlogr.common.Result;
 import jakarta.inject.Inject;
 
 import java.util.UUID;

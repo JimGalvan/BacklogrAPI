@@ -1,9 +1,9 @@
 package com.backlogr.core.auth;
 
-import com.backlogr.domain.user.UserIntegration;
-import com.backlogr.integration.AuthTokens;
-import com.backlogr.integration.ProviderService;
-import com.backlogr.shared.Result;
+import com.backlogr.domain.entities.user.UserIntegration;
+import com.backlogr.domain.model.AuthTokens;
+import com.backlogr.services.ProviderService;
+import com.backlogr.common.Result;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import java.time.Instant;

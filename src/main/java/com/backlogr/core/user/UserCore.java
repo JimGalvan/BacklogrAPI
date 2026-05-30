@@ -1,11 +1,11 @@
 package com.backlogr.core.user;
 
-import com.backlogr.domain.user.User;
-import com.backlogr.dto.user.CreateUserRequest;
-import com.backlogr.dto.user.UserResponse;
-import com.backlogr.mapper.UserMapper;
+import com.backlogr.domain.entities.user.User;
+import com.backlogr.domain.dto.user.CreateUserRequest;
+import com.backlogr.domain.dto.user.UserResponse;
+import com.backlogr.domain.mapper.UserMapper;
 import com.backlogr.repository.user.UserRepository;
-import com.backlogr.shared.Result;
+import com.backlogr.common.Result;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;

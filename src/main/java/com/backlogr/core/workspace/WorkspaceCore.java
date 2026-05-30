@@ -1,15 +1,15 @@
 package com.backlogr.core.workspace;
 
 import com.backlogr.core.BaseCore;
-import com.backlogr.domain.workspace.Workspace;
-import com.backlogr.domain.workspace.WorkspaceMember;
-import com.backlogr.dto.workspace.CreateWorkspaceRequest;
-import com.backlogr.dto.workspace.InviteMemberRequest;
-import com.backlogr.dto.workspace.WorkspaceMemberResponse;
-import com.backlogr.dto.workspace.WorkspaceResponse;
-import com.backlogr.mapper.WorkspaceMapper;
+import com.backlogr.domain.entities.workspace.Workspace;
+import com.backlogr.domain.entities.workspace.WorkspaceMember;
+import com.backlogr.domain.dto.workspace.CreateWorkspaceRequest;
+import com.backlogr.domain.dto.workspace.InviteMemberRequest;
+import com.backlogr.domain.dto.workspace.WorkspaceMemberResponse;
+import com.backlogr.domain.dto.workspace.WorkspaceResponse;
+import com.backlogr.domain.mapper.WorkspaceMapper;
 import com.backlogr.repository.user.UserRepository;
-import com.backlogr.shared.Result;
+import com.backlogr.common.Result;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
