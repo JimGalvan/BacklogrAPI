@@ -21,8 +21,11 @@ public interface OllamaHttpClient {
     @Produces(MediaType.APPLICATION_JSON)
     Uni<OllamaChatResponse> chat(OllamaChatRequest request);
 
+    // Returns raw NDJSON lines as strings — each line is one JSON object from Ollama.
+    // We deserialize manually in OllamaAiService to avoid Quarkus's NDJSON token-level
+    // reader splitting individual JSON field values into separate Multi items.
     @POST
     @Path("/chat")
     @Produces("application/x-ndjson")
-    Multi<OllamaChatResponse> streamChat(OllamaChatRequest request);
+    Multi<String> streamChat(OllamaChatRequest request);
 }
