@@ -1,4 +1,4 @@
-package com.backlogr.services.clients;
+package com.backlogr.services.core.clients;
 
 import com.backlogr.domain.dto.jira.JiraCommentListResponse;
 import com.backlogr.domain.dto.jira.JiraIssueResponse;

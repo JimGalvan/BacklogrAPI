@@ -1,7 +1,7 @@
-package com.backlogr.services.factories;
+package com.backlogr.services.core.factories;
 
 import com.backlogr.domain.enums.Provider;
-import com.backlogr.services.ProviderService;
+import com.backlogr.services.core.ProviderService;
 import com.backlogr.services.jira.JiraService;
 import jakarta.annotation.PostConstruct;
 import io.quarkus.runtime.Startup;

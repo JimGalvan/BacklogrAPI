@@ -2,7 +2,7 @@ package com.backlogr.core.auth;
 
 import com.backlogr.domain.entities.user.UserIntegration;
 import com.backlogr.domain.model.AuthTokens;
-import com.backlogr.services.ProviderService;
+import com.backlogr.services.core.ProviderService;
 import com.backlogr.common.Result;
 import jakarta.enterprise.context.ApplicationScoped;
 

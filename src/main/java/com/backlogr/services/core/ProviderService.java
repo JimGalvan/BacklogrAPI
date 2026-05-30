@@ -1,4 +1,4 @@
-package com.backlogr.services;
+package com.backlogr.services.core;
 
 import com.backlogr.domain.enums.Provider;
 import com.backlogr.common.Result;

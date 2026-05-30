@@ -7,7 +7,7 @@ import com.backlogr.domain.dto.ticket.TicketCommentResponse;
 import com.backlogr.domain.enums.AiModelProvider;
 import com.backlogr.domain.ai.AiMessage;
 import com.backlogr.services.ai.AiService;
-import com.backlogr.services.factories.AiServiceFactory;
+import com.backlogr.services.core.factories.AiServiceFactory;
 import com.backlogr.common.Result;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.smallrye.mutiny.Multi;

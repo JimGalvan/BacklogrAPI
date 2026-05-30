@@ -1,4 +1,4 @@
-package com.backlogr.services.factories;
+package com.backlogr.services.core.factories;
 
 import com.backlogr.domain.enums.AiModelProvider;
 import com.backlogr.services.ai.AiService;
