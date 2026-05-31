@@ -1,11 +1,9 @@
 package com.backlogr.services.ai;
 
 import com.backlogr.domain.enums.AiModelProvider;
-import com.backlogr.domain.ai.AiMessage;
+import com.backlogr.domain.ai.Prompt;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-
-import java.util.List;
 
 public interface AiService {
 
@@ -14,8 +12,8 @@ public interface AiService {
     AiModelProvider getProvider();
 
     /** Waits for the full response before returning. */
-    Uni<String> ask(List<AiMessage> messages);
+    Uni<String> ask(Prompt prompt);
 
     /** Emits one token at a time as the model generates it. */
-    Multi<String> stream(List<AiMessage> messages);
+    Multi<String> stream(Prompt prompt);
 }

@@ -1,7 +1,7 @@
 package com.backlogr.services.ai.ollama;
 
 import com.backlogr.domain.enums.AiModelProvider;
-import com.backlogr.domain.ai.AiMessage;
+import com.backlogr.domain.ai.Prompt;
 import com.backlogr.services.ai.AiService;
 import com.backlogr.domain.dto.ollama.OllamaChatRequest;
 import com.backlogr.domain.dto.ollama.OllamaChatResponse;
@@ -53,14 +53,14 @@ public class OllamaAiService implements AiService {
     @Timeout(value = 90, unit = ChronoUnit.SECONDS)
     @CircuitBreaker(requestVolumeThreshold = 5, failureRatio = 0.6)
     @Fallback(fallbackMethod = "fallbackAsk")
-    public Uni<String> ask(List<AiMessage> messages) {
+    public Uni<String> ask(Prompt prompt) {
         return ollamaHttpClient
-                .chat(buildRequest(messages, false))
+                .chat(buildRequest(prompt, false))
                 .map(response -> response.message().content());
     }
 
     @Override
-    public Multi<String> stream(List<AiMessage> messages) {
+    public Multi<String> stream(Prompt prompt) {
         // Quarkus hands us raw HTTP body chunks — not one NDJSON line per item.
         // A single chunk may contain several complete JSON objects separated by \n,
         // and the first fragment may be the tail end of the previous chunk's last line.
@@ -68,7 +68,7 @@ public class OllamaAiService implements AiService {
         StringBuilder[] lineBuffer = { new StringBuilder() };
 
         return ollamaHttpClient
-                .streamChat(buildRequest(messages, true))
+                .streamChat(buildRequest(prompt, true))
                 .flatMap(chunk -> {
                     lineBuffer[0].append(chunk);
 
@@ -103,12 +103,12 @@ public class OllamaAiService implements AiService {
         }
     }
 
-    public Uni<String> fallbackAsk(List<AiMessage> messages) {
+    public Uni<String> fallbackAsk(Prompt prompt) {
         return Uni.createFrom().item("AI service is currently unavailable. Please try again later.");
     }
 
-    private OllamaChatRequest buildRequest(List<AiMessage> messages, boolean stream) {
-        List<OllamaMessage> ollamaMessages = messages.stream()
+    private OllamaChatRequest buildRequest(Prompt prompt, boolean stream) {
+        List<OllamaMessage> ollamaMessages = prompt.messages().stream()
                 .map(message -> new OllamaMessage(message.role(), message.content()))
                 .toList();
 

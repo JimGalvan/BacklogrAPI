@@ -8,6 +8,7 @@ import com.backlogr.domain.entities.user.UserIntegration;
 import com.backlogr.domain.dto.ticket.TicketImportRequest;
 import com.backlogr.domain.dto.ticket.TicketAggregateResponse;
 import com.backlogr.domain.dto.ticket.TicketCommentResponse;
+import com.backlogr.domain.dto.ticket.TicketWithComments;
 import com.backlogr.domain.enums.Provider;
 import com.backlogr.domain.model.AuthTokens;
 import com.backlogr.domain.model.TicketComment;
@@ -202,6 +203,28 @@ public class TicketCore extends BaseCore {
                 .toList();
 
         return Result.ok(response);
+    }
+
+    /**
+     * Aggregates a ticket together with its comments. If the ticket cannot be
+     * fetched the failure is propagated; if only the comments fail the ticket is
+     * still returned with an empty comment list (description-only callers degrade gracefully).
+     */
+    public Result<TicketWithComments> getTicketWithComments(UUID userId, UUID workspaceId, String ticketKey) {
+        Result<TicketAggregateResponse> ticketResult = getTicket(userId, workspaceId, ticketKey);
+        if (!ticketResult.isSuccess()) return ticketResult.asError();
+
+        Result<List<TicketCommentResponse>> commentsResult = getTicketComments(userId, workspaceId, ticketKey);
+        List<TicketCommentResponse> comments = commentsResult.isSuccess()
+                ? commentsResult.getValue()
+                : List.of();
+
+        if (!commentsResult.isSuccess()) {
+            logger.warnf("Could not fetch comments for ticket %s — proceeding with description only: %s",
+                    ticketKey, commentsResult.getMessage());
+        }
+
+        return Result.ok(new TicketWithComments(ticketResult.getValue(), comments));
     }
 
     @Transactional

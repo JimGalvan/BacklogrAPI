@@ -1,8 +1,8 @@
-package com.backlogr.core.ai;
+package com.backlogr.prompts;
 
-public final class SystemPrompts {
+public final class SystemPromptConstants {
 
-    private SystemPrompts() {}
+    private SystemPromptConstants() {}
 
     public static final String TLDR = """
             You are a concise technical summarizer. Given a Jira ticket's description and \
